@@ -1099,3 +1099,68 @@ SELECT / REJECT
 Persist Editorial Decision
     ↓
 Breeth
+
+# Stage 4.1 — Persona-Driven Post Generation
+
+## Goal
+
+Convert an editorially selected AI or technology topic into a publishable AutoScribe post while maintaining a consistent technical identity and editorial voice.
+
+The post generator operates only after a topic has passed the editorial review stage.
+
+---
+
+## Architecture
+
+The publishing pipeline now contains:
+
+```text
+Live Information Sources
+        ↓
+Discovery Engine
+        ↓
+Editorial Review
+        ↓
+SELECTED TOPIC
+        ↓
+Post Generator
+        ↓
+Generated Post
+
+
+# Stage 4.3 — PostgreSQL Candidate Persistence
+
+## Goal
+
+Connect the AI editorial pipeline to PostgreSQL so that approved and rejected generated candidates are persisted instead of existing only in memory or terminal output.
+
+Before this stage:
+
+Discovery → Editorial → Generation → Quality Gate → Terminal
+
+After this stage:
+
+Discovery → Editorial → Generation → Quality Gate → PostgreSQL
+
+---
+
+## Architecture
+
+The persistence pipeline is:
+
+```text
+Live Sources
+    ↓
+Discovery
+    ↓
+Editorial Review
+    ↓
+Selected Topic
+    ↓
+Post Generation
+    ↓
+Quality Review
+    ↓
+CandidatePost
+    ↓
+PostgreSQL

@@ -40,7 +40,64 @@ function clampScore(
     ),
   );
 }
+function parseAIJson(
+  text: string,
+): unknown {
+  const raw = text.trim();
 
+  // 1. Direct JSON
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // Continue.
+  }
+
+  // 2. JSON wrapped in ```json ... ```
+  const fencedMatch =
+    raw.match(
+      /```(?:json)?\s*([\s\S]*?)\s*```/i,
+    );
+
+  if (fencedMatch?.[1]) {
+    try {
+      return JSON.parse(
+        fencedMatch[1].trim(),
+      );
+    } catch {
+      // Continue.
+    }
+  }
+
+  // 3. JSON embedded in additional text
+  const firstBrace =
+    raw.indexOf("{");
+
+  const lastBrace =
+    raw.lastIndexOf("}");
+
+  if (
+    firstBrace !== -1 &&
+    lastBrace > firstBrace
+  ) {
+    const possibleJson =
+      raw.slice(
+        firstBrace,
+        lastBrace + 1,
+      );
+
+    try {
+      return JSON.parse(
+        possibleJson,
+      );
+    } catch {
+      // Continue.
+    }
+  }
+
+  throw new Error(
+    `AI editorial reviewer returned invalid JSON:\n${text}`,
+  );
+}
 function normalizeReview(
   value: unknown,
 ): AIEditorialReview {
@@ -409,18 +466,10 @@ export async function reviewTopicWithAI(
         ),
     });
 
-  let parsed: unknown;
-
-  try {
-    parsed =
-      JSON.parse(
-        response.text,
-      );
-  } catch {
-    throw new Error(
-      `AI editorial reviewer returned invalid JSON:\n${response.text}`,
-    );
-  }
+  const parsed =
+  parseAIJson(
+    response.text,
+  );
 
   const review =
     normalizeReview(
