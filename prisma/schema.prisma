@@ -1,13 +1,341 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+//////////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////////
+
+enum AgentStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum TopicStatus {
+  DISCOVERED
+  EVALUATING
+  REJECTED
+  SELECTED
+  DRAFTED
+  PUBLISHED
+  EXPIRED
+}
+
+enum EditorialDecision {
+  PUBLISH
+  REJECT
+}
+
+enum CandidateStatus {
+  DRAFT
+  REVIEWING
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum SchedulerStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+enum MemoryType {
+  PUBLISHED_POST
+  TOPIC_DECISION
+  EDITORIAL_INSIGHT
+}
+
+//////////////////////////////////////////////////////////
+// AGENT
+//////////////////////////////////////////////////////////
+
+model Agent {
+  id     String      @id @default(cuid())
+  name   String
+  domain String
+  status AgentStatus @default(ACTIVE)
+
+  // Autonomous publishing configuration
+  publishIntervalMinutes Int @default(60)
+
+  // Prevents duplicate concurrent processing
+  isProcessing Boolean @default(false)
+
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  // Relations
+  persona       Persona?
+  topics        Topic[]
+  candidates    CandidatePost[]
+  posts         PublishedPost[]
+  memories      Memory[]
+  schedulerLogs SchedulerLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([nextRunAt])
+}
+
+//////////////////////////////////////////////////////////
+// PERSONA
+//////////////////////////////////////////////////////////
+
+model Persona {
+  id String @id @default(cuid())
+
+  writingStyle String @db.Text
+  tone         String
+  audience     String @db.Text
+
+  // Flexible persona configuration
+  interests Json
+  opinions  Json
+  blacklist Json
+
+  // Complete system instructions for the persona
+  systemPrompt String @db.Text
+
+  // Editorial configuration
+  maxPostLength       Int   @default(180)
+  minTopicScore       Float @default(7.0)
+  avoidDuplicateScore Float @default(0.80)
+
+  agentId String @unique
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////////
+// DISCOVERED TOPICS
+//////////////////////////////////////////////////////////
+
+model Topic {
+  id String @id @default(cuid())
+
+  title   String
+  summary String @db.Text
+
+  // Primary discovered source
+  sourceName String
+  sourceUrl  String
+
+  // Canonical article URL
+  url String
+
+  publishedDate DateTime?
+  discoveredAt  DateTime  @default(now())
+
+  // Overall editorial score
+  score Float?
+
+  // Individual editorial scores
+  noveltyScore    Float?
+  relevanceScore  Float?
+  technicalScore  Float?
+  usefulnessScore Float?
+  timelinessScore Float?
+  personaFitScore Float?
+
+  status TopicStatus @default(DISCOVERED)
+
+  editorialDecision EditorialDecision?
+
+  decisionReason  String? @db.Text
+  rejectionReason String? @db.Text
+
+  // Relations
+  agent         Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  candidate     CandidatePost?
+  publishedPost PublishedPost?
+  topicSources  TopicSource[]
+
+  agentId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentId, url])
+  @@index([agentId])
+  @@index([status])
+  @@index([score])
+  @@index([createdAt])
+  @@index([publishedDate])
+  @@index([agentId, status])
+}
+
+//////////////////////////////////////////////////////////
+// ADDITIONAL SOURCES FOR A TOPIC
+//////////////////////////////////////////////////////////
+
+model TopicSource {
+  id String @id @default(cuid())
+
+  name String
+  url  String
+
+  publishedDate DateTime?
+
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([topicId])
+}
+
+//////////////////////////////////////////////////////////
+// GENERATED CANDIDATE POSTS
+//////////////////////////////////////////////////////////
+
+model CandidatePost {
+  id String @id @default(cuid())
+
+  draft String @db.Text
+
+  review String? @db.Text
+
+  qualityScore Float?
+
+  status CandidateStatus @default(DRAFT)
+
+  rejectionReason String? @db.Text
+
+  // AI generation metadata
+  model         String?
+  promptVersion String?
+
+  topicId String @unique
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  publishedPost PublishedPost?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([status])
+  @@index([qualityScore])
+  @@index([createdAt])
+}
+
+//////////////////////////////////////////////////////////
+// PUBLISHED POSTS
+//////////////////////////////////////////////////////////
+
+model PublishedPost {
+  id String @id @default(cuid())
+
+  // Final content returned by the feed API
+  text      String @db.Text
+  rationale String @db.Text
+
+  // Source URLs returned by the feed API
+  sources String[]
+
+  // AI generation metadata
+  model         String?
+  promptVersion String?
+
+  topicId String @unique
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  candidateId String        @unique
+  candidate   CandidatePost @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  memory Memory?
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  publishedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([publishedAt])
+  @@index([agentId, publishedAt])
+}
+
+//////////////////////////////////////////////////////////
+// AGENT MEMORY
+//////////////////////////////////////////////////////////
+
+model Memory {
+  id String @id @default(cuid())
+
+  type MemoryType
+
+  summary String @db.Text
+
+  keywords String[]
+
+  // Temporary representation.
+  // This will be migrated to pgvector during
+  // the Memory Engine stage.
+  embedding Json
+
+  // Optional published-post relationship
+  postId String?        @unique
+  post   PublishedPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+//////////////////////////////////////////////////////////
+// AUTONOMOUS SCHEDULER EXECUTION
+//////////////////////////////////////////////////////////
+
+model SchedulerLog {
+  id String @id @default(cuid())
+
+  startedAt  DateTime
+  finishedAt DateTime?
+
+  topicsFound     Int @default(0)
+  topicsEvaluated Int @default(0)
+  topicsRejected  Int @default(0)
+  topicsSelected  Int @default(0)
+  topicsPublished Int @default(0)
+
+  status SchedulerStatus @default(RUNNING)
+
+  error String? @db.Text
+
+  // Performance metrics
+  discoveryDurationMs  Int?
+  editorialDurationMs  Int?
+  publishingDurationMs Int?
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([agentId, startedAt])
 }
