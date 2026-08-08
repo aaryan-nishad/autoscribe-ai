@@ -524,3 +524,266 @@ The connector:
 
 ```bash
 npx tsc --noEmit
+
+# Stage 2.3 — GitHub Live Source
+
+## Goal
+
+Implement GitHub as the second live information source for the autonomous AI technology agent.
+
+GitHub complements Hacker News by providing signals from active software projects, open-source repositories, developer tools, AI frameworks, and machine learning projects.
+
+---
+
+## Architecture Decisions
+
+### GitHub
+
+GitHub is used as a technical project discovery source.
+
+The connector searches for recently updated AI and technology repositories.
+
+---
+
+### Discovery Signals
+
+The connector collects:
+
+- Repository name
+- Repository description
+- Repository URL
+- Stars
+- Forks
+- Primary programming language
+- Repository topics
+- Creation date
+- Last update date
+
+These signals are discovery metadata and are not final editorial decisions.
+
+---
+
+### Broad Filtering
+
+The GitHub connector performs an initial relevance filter using AI and technology terms.
+
+The connector does not decide whether a repository deserves publication.
+
+The Editorial Engine will later evaluate:
+
+- Technical significance
+- Novelty
+- Practical usefulness
+- Timeliness
+- Persona fit
+- Potential audience value
+
+---
+
+### Repository Quality
+
+Archived repositories and forks are excluded from discovery.
+
+---
+
+## Prompt
+
+Implement a production-quality TypeScript GitHub source connector for an autonomous AI and technology discovery system.
+
+Requirements:
+
+- Implement the existing TopicSource interface.
+- Search GitHub repositories using the public REST API.
+- Focus on recently updated AI and technology repositories.
+- Collect repository metadata.
+- Exclude archived repositories.
+- Exclude forks.
+- Apply a broad AI/technology relevance filter.
+- Normalize repositories into TopicCandidate objects.
+- Handle GitHub API failures.
+- Add request timeouts.
+- Avoid duplicate repository URLs.
+- Keep GitHub-specific logic isolated from the discovery engine.
+
+Do not make final editorial publish/reject decisions in the GitHub connector.
+
+---
+
+## AI Response
+
+The GitHub connector was implemented as a TopicSource.
+
+The connector:
+
+1. Builds a recent GitHub repository search query.
+2. Searches for AI and technology projects.
+3. Retrieves repository metadata.
+4. Excludes archived repositories.
+5. Excludes forked repositories.
+6. Applies an initial relevance filter.
+7. Normalizes repositories into TopicCandidate objects.
+8. Removes duplicate repository URLs.
+9. Uses request timeouts.
+10. Keeps GitHub-specific logic isolated from the discovery architecture.
+
+---
+
+## Files Added
+
+- services/sources/github.ts
+
+---
+
+## Files Modified
+
+- services/sources/index.ts
+
+---
+
+## Architecture
+
+```text
+GitHub API
+    ↓
+Recent Repository Search
+    ↓
+AI / Technology Filter
+    ↓
+Exclude Forks + Archived Repositories
+    ↓
+Normalize Repository Metadata
+    ↓
+Deduplicate
+    ↓
+TopicCandidate[]
+
+# Stage 2.3 — GitHub Live Source
+
+## Goal
+
+Implement GitHub as the second live information source for the autonomous AI technology agent.
+
+GitHub complements Hacker News by providing signals from active software projects, open-source repositories, developer tools, AI frameworks, and machine learning projects.
+
+---
+
+## Architecture Decisions
+
+### GitHub
+
+GitHub is used as a technical project discovery source.
+
+The connector searches for recently updated AI and technology repositories.
+
+---
+
+### Discovery Signals
+
+The connector collects:
+
+- Repository name
+- Repository description
+- Repository URL
+- Stars
+- Forks
+- Primary programming language
+- Repository topics
+- Creation date
+- Last update date
+
+These signals are discovery metadata and are not final editorial decisions.
+
+---
+
+### Broad Filtering
+
+The GitHub connector performs an initial relevance filter using AI and technology terms.
+
+The connector does not decide whether a repository deserves publication.
+
+The Editorial Engine will later evaluate:
+
+- Technical significance
+- Novelty
+- Practical usefulness
+- Timeliness
+- Persona fit
+- Potential audience value
+
+---
+
+### Repository Quality
+
+Archived repositories and forks are excluded from discovery.
+
+---
+
+## Prompt
+
+Implement a production-quality TypeScript GitHub source connector for an autonomous AI and technology discovery system.
+
+Requirements:
+
+- Implement the existing TopicSource interface.
+- Search GitHub repositories using the public REST API.
+- Focus on recently updated AI and technology repositories.
+- Collect repository metadata.
+- Exclude archived repositories.
+- Exclude forks.
+- Apply a broad AI/technology relevance filter.
+- Normalize repositories into TopicCandidate objects.
+- Handle GitHub API failures.
+- Add request timeouts.
+- Avoid duplicate repository URLs.
+- Keep GitHub-specific logic isolated from the discovery engine.
+
+Do not make final editorial publish/reject decisions in the GitHub connector.
+
+---
+
+## AI Response
+
+The GitHub connector was implemented as a TopicSource.
+
+The first implementation used a combined GitHub search query, but the GitHub API rejected the query with HTTP 422 Unprocessable Entity.
+
+The implementation was then redesigned to use multiple independent valid search queries.
+
+Each search is executed independently, and a failed search does not terminate the entire discovery operation.
+
+The connector:
+
+1. Searches multiple AI and technology terms.
+2. Restricts results to recently updated repositories.
+3. Retrieves repository metadata.
+4. Excludes archived repositories.
+5. Excludes forked repositories.
+6. Applies an initial AI/technology relevance filter.
+7. Combines results from all searches.
+8. Deduplicates repositories by repository ID.
+9. Normalizes repositories into TopicCandidate objects.
+10. Sorts candidates by recent activity.
+11. Performs final URL-level deduplication.
+12. Uses request timeouts.
+13. Isolates GitHub-specific logic from the discovery architecture.
+
+---
+
+## Files Added
+
+- services/sources/github.ts
+
+---
+
+## Files Modified
+
+- services/sources/index.ts
+
+---
+
+## Testing
+
+### TypeScript Compilation
+
+```bash
+npx tsc --noEmit
