@@ -10,6 +10,10 @@ export {
   saveCandidatePost,
 } from "./candidate-repository";
 
+export {
+  publishCandidate,
+} from "./publisher";
+
 export type {
   GeneratedPost,
   PostGenerationInput,

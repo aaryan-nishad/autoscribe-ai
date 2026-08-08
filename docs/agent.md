@@ -1164,3 +1164,26 @@ Quality Review
 CandidatePost
     ↓
 PostgreSQL
+
+# Stage 4.4 — Publication Transaction
+
+## Goal
+
+Convert an approved CandidatePost into a persistent PublishedPost while ensuring that the same candidate/topic cannot be published more than once.
+
+---
+
+## Architecture
+
+The publication lifecycle is:
+
+```text
+CandidatePost
+     ↓
+APPROVED
+     ↓
+Publication Service
+     ↓
+PublishedPost
+     ↓
+Topic = PUBLISHED
