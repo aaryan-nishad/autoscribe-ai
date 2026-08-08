@@ -1301,3 +1301,97 @@ TypeScript compilation passed successfully.
 
 ```text
 npx tsc --noEmit
+
+# Stage 5.2 — Agent Feed API
+
+## Goal
+
+Expose published AutoScribe content through a read-only API endpoint.
+
+## API
+
+GET `/api/agent/feed`
+
+## Architecture
+
+The feed API reads already-published content from PostgreSQL through Prisma.
+
+The endpoint does not:
+
+- discover topics
+- call AI providers
+- generate posts
+- run editorial review
+- publish content
+
+The flow is:
+
+PublishedPost
+→ Prisma
+→ `/api/agent/feed`
+→ API consumer
+
+## Response
+
+The API returns:
+
+- published post ID
+- post text
+- editorial rationale
+- source URLs
+- publication timestamp
+- topic information
+- agent information
+- pagination metadata
+
+## Pagination
+
+The endpoint supports cursor-based pagination.
+
+### Default request
+
+GET `/api/agent/feed`
+
+Default page size:
+
+10 posts
+
+### Custom page size
+
+GET `/api/agent/feed?limit=10`
+
+### Cursor pagination
+
+GET `/api/agent/feed?limit=10&cursor=<POST_ID>`
+
+The maximum page size is limited to 50 posts.
+
+## Data Filtering
+
+Only content represented by `PublishedPost` records is returned.
+
+Published posts are ordered by:
+
+1. `publishedAt` descending
+2. `id` descending
+
+This ensures deterministic ordering when multiple posts have similar publication timestamps.
+
+## Error Handling
+
+Unexpected database or API errors return HTTP 500 with a JSON error response.
+
+## Validation
+
+TypeScript compilation passed successfully.
+
+## API Test
+
+Agent Feed API test completed successfully.
+
+### Default feed
+
+HTTP status:
+
+```text
+200
