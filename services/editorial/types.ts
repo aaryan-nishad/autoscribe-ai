@@ -41,3 +41,28 @@ export interface EditorialScore {
 
   reason: string;
 }
+
+/**
+ * Structured result returned by the AI editorial reviewer.
+ */
+export interface AIEditorialReview {
+  decision: EditorialDecision;
+
+  score: number;
+
+  relevance: number;
+
+  significance: number;
+
+  novelty: number;
+
+  timeliness: number;
+
+  evidence: number;
+
+  audienceValue: number;
+
+  reason: string;
+
+  keyInsight: string | null;
+}
