@@ -1,5 +1,7 @@
+import { arxivSource } from "./arxiv";
 import { githubSource } from "./github";
 import { hackerNewsSource } from "./hackernews";
+
 import type { TopicSource } from "./types";
 
 /**
@@ -8,4 +10,5 @@ import type { TopicSource } from "./types";
 export const topicSources: TopicSource[] = [
   hackerNewsSource,
   githubSource,
+  arxivSource,
 ];

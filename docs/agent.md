@@ -787,3 +787,112 @@ The connector:
 
 ```bash
 npx tsc --noEmit
+
+# Stage 2.4 — arXiv Live Research Source
+
+## Goal
+
+Implement arXiv as the third live information source for the autonomous AI technology agent.
+
+arXiv complements Hacker News and GitHub by providing newly submitted AI and technology research papers.
+
+---
+
+## Architecture Decisions
+
+### arXiv
+
+arXiv is used as a research discovery source.
+
+The connector searches relevant computer science categories:
+
+- cs.AI — Artificial Intelligence
+- cs.LG — Machine Learning
+- cs.CL — Computation and Language
+- cs.CV — Computer Vision
+- cs.RO — Robotics
+
+---
+
+### XML / Atom Processing
+
+The arXiv API returns Atom/XML rather than JSON.
+
+The connector therefore uses `fast-xml-parser` to convert the API response into structured TypeScript data.
+
+---
+
+### Research Metadata
+
+The connector extracts:
+
+- Paper title
+- Abstract
+- Authors
+- Categories
+- arXiv URL
+- Publication date
+
+The paper abstract is used as the initial topic summary.
+
+The future Editorial Engine can transform the research information into a concise, audience-appropriate post.
+
+---
+
+### Duplicate Handling
+
+A paper can belong to multiple arXiv categories.
+
+The connector therefore deduplicates papers using their canonical arXiv URL.
+
+---
+
+## Prompt
+
+Implement a production-quality TypeScript arXiv source connector for an autonomous AI and technology discovery system.
+
+Requirements:
+
+- Implement the existing TopicSource interface.
+- Search relevant AI and computer science arXiv categories.
+- Retrieve recently submitted papers.
+- Parse the Atom/XML API response.
+- Extract titles, abstracts, authors, categories, URLs, and publication dates.
+- Normalize papers into TopicCandidate objects.
+- Remove duplicate papers appearing in multiple categories.
+- Sort results by publication date.
+- Handle API failures.
+- Add request timeouts.
+- Keep arXiv-specific logic isolated from the discovery engine.
+
+Do not make final editorial publish/reject decisions in the arXiv connector.
+
+---
+
+## AI Response
+
+The arXiv connector was implemented as a TopicSource.
+
+The connector:
+
+1. Searches cs.AI.
+2. Searches cs.LG.
+3. Searches cs.CL.
+4. Searches cs.CV.
+5. Searches cs.RO.
+6. Requests recently submitted papers.
+7. Parses the Atom/XML response.
+8. Normalizes paper metadata.
+9. Extracts authors and categories.
+10. Converts publication timestamps into JavaScript Date objects.
+11. Deduplicates papers by canonical URL.
+12. Sorts papers by publication date.
+13. Uses request timeouts.
+14. Keeps source-specific logic isolated from the discovery architecture.
+
+---
+
+## Dependency Added
+
+```text
+fast-xml-parser
