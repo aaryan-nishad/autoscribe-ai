@@ -238,3 +238,289 @@ Stage 0.3 completed successfully.
 ## Commit
 
 feat: implement final database schema
+
+# Stage 2.1 — Topic Source Architecture
+
+## Goal
+
+Design a pluggable source architecture that allows the autonomous agent to discover AI and technology topics from multiple live information sources.
+
+## Prompt
+
+Design a TypeScript abstraction for an autonomous AI technology agent that will collect topics from multiple live information sources such as Hacker News, GitHub, arXiv, and RSS feeds.
+
+The architecture should:
+- use a common interface for all sources
+- return normalized topic candidates
+- allow new sources to be added without modifying the discovery engine
+- support asynchronous network requests
+- remain simple enough for a hackathon implementation
+
+## AI Response
+
+The source layer uses a common `TopicSource` interface.
+
+Each source implements:
+
+- a source name
+- an asynchronous discovery method
+- normalized `TopicCandidate` objects
+
+A source registry will provide the discovery engine with the currently enabled sources.
+
+This keeps source-specific logic isolated from the autonomous editorial pipeline.
+
+## Files Added
+
+- services/sources/types.ts
+- services/sources/index.ts
+
+## Architecture
+
+Discovery Engine
+    ↓
+TopicSource[]
+    ↓
+TopicCandidate[]
+    ↓
+Editorial Engine
+
+## Test
+
+The source registry currently initializes successfully with zero sources.
+
+Individual live connectors will be implemented in subsequent stages.
+
+## Result
+
+Stage 2.1 completed.
+
+# Stage 2.2 — Hacker News Live Source
+
+## Goal
+
+Implement the first real-time information source for the autonomous AI technology agent.
+
+The source must independently retrieve current Hacker News stories and normalize AI/technology-related stories into the common TopicCandidate format.
+
+---
+
+## Source
+
+Hacker News public API.
+
+The connector uses:
+
+- top stories
+- new stories
+- individual story endpoints
+
+---
+
+## Prompt
+
+Implement a production-quality TypeScript Hacker News source connector for an autonomous AI technology discovery system.
+
+Requirements:
+
+- implement the existing TopicSource interface
+- retrieve current Hacker News top stories
+- retrieve current Hacker News new stories
+- fetch individual story details
+- handle failed individual requests without failing the entire discovery cycle
+- apply a broad AI/technology relevance filter
+- remove duplicate stories appearing in both lists
+- normalize results into TopicCandidate objects
+- convert Hacker News Unix timestamps to JavaScript Date objects
+- handle stories without external URLs
+- handle API failures
+- add request timeouts
+- keep source-specific logic isolated from the discovery engine
+
+The discovery filter should be broad because final editorial judgment will happen in a separate stage.
+
+---
+
+## AI Response
+
+Implemented a Hacker News TopicSource connector.
+
+The connector:
+
+1. Retrieves top stories.
+2. Retrieves new stories.
+3. Fetches individual story records.
+4. Removes deleted/dead/non-story items.
+5. Combines both lists.
+6. Deduplicates stories by Hacker News ID.
+7. Applies an initial AI/technology relevance filter.
+8. Converts each result into TopicCandidate.
+9. Sorts candidates by publication time.
+10. Handles individual request failures without aborting the entire source.
+11. Uses a request timeout to prevent an external API from blocking the autonomous pipeline indefinitely.
+
+---
+
+## Files Added
+
+- services/sources/hackernews.ts
+
+## Files Modified
+
+- services/sources/index.ts
+
+---
+
+## Architecture
+
+Hacker News API
+    ↓
+Top Stories + New Stories
+    ↓
+Individual Story Details
+    ↓
+Deduplication
+    ↓
+Technology Relevance Filter
+    ↓
+TopicCandidate[]
+    ↓
+Future Discovery Engine
+
+---
+
+## Editorial Boundary
+
+The Hacker News connector does NOT decide whether a topic deserves publication.
+
+It only discovers potentially relevant topics.
+
+The Editorial Engine will later determine:
+
+- novelty
+- relevance
+- technical depth
+- usefulness
+- timeliness
+- persona fit
+- final publish/reject decision
+
+---
+
+## Testing
+
+TypeScript compilation must succeed.
+
+A live source test will verify that Hacker News returns zero or more normalized TopicCandidate objects.
+
+---
+
+## Result
+
+Stage 2.2 completed.
+
+# Stage 2.2 — Hacker News Live Source
+
+## Goal
+
+Implement the first real live information source for the autonomous AI technology agent.
+
+The connector retrieves current Hacker News stories and converts potentially relevant AI and technology stories into the common `TopicCandidate` format.
+
+---
+
+## Architecture Decisions
+
+### Hacker News
+
+Hacker News was selected as the first live source because it provides a public API suitable for retrieving current technology stories.
+
+The connector uses:
+
+- Top stories
+- New stories
+- Individual story endpoints
+
+---
+
+### Broad Discovery Filter
+
+The Hacker News connector performs only an initial technology relevance filter.
+
+It does not make the final publishing decision.
+
+The later Editorial Engine will determine whether a discovered topic is actually worth publishing.
+
+---
+
+### Failure Isolation
+
+A failed individual Hacker News story request does not cause the entire discovery cycle to fail.
+
+The connector also uses request timeouts so that an unavailable external source cannot block the autonomous pipeline indefinitely.
+
+---
+
+## Prompt
+
+Implement a production-quality TypeScript Hacker News source connector for an autonomous AI technology discovery system.
+
+Requirements:
+
+- Implement the existing `TopicSource` interface.
+- Retrieve current Hacker News top stories.
+- Retrieve current Hacker News new stories.
+- Fetch individual story details.
+- Handle failed individual requests without failing the entire discovery cycle.
+- Apply a broad AI and technology relevance filter.
+- Remove duplicate stories appearing in both lists.
+- Normalize results into `TopicCandidate` objects.
+- Convert Hacker News Unix timestamps to JavaScript `Date` objects.
+- Handle stories without external URLs.
+- Handle API failures.
+- Add request timeouts.
+- Keep source-specific logic isolated from the discovery engine.
+
+The discovery filter should be broad because final editorial judgment will happen in a separate stage.
+
+---
+
+## AI Response
+
+The Hacker News connector was implemented as a `TopicSource`.
+
+The connector:
+
+1. Retrieves top stories.
+2. Retrieves new stories.
+3. Fetches individual story records.
+4. Removes deleted and dead stories.
+5. Removes non-story items.
+6. Combines top and new stories.
+7. Deduplicates stories by Hacker News ID.
+8. Applies an initial AI and technology relevance filter.
+9. Converts results into `TopicCandidate`.
+10. Sorts candidates by publication time.
+11. Handles individual request failures without aborting the entire source.
+12. Uses request timeouts to prevent an external API from blocking the autonomous pipeline.
+
+---
+
+## Files Added
+
+- services/sources/hackernews.ts
+
+---
+
+## Files Modified
+
+- services/sources/index.ts
+
+---
+
+## Testing
+
+### TypeScript Compilation
+
+```bash
+npx tsc --noEmit
