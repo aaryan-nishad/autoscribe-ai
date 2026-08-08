@@ -896,3 +896,41 @@ The connector:
 
 ```text
 fast-xml-parser
+
+# Stage 2.5 — Unified Discovery Engine
+
+## Goal
+
+Create a unified discovery service that independently executes all registered live information sources and produces one normalized collection of topic candidates.
+
+The discovery engine must remain independent from individual source implementations and must continue operating when one source fails.
+
+---
+
+## Architecture Decisions
+
+### Unified Discovery
+
+The discovery engine is responsible for:
+
+- Running all registered sources
+- Collecting candidates
+- Normalizing candidate data
+- Deduplicating candidates
+- Sorting candidates by freshness
+- Reporting source execution status
+
+---
+
+### Source Isolation
+
+Each source executes independently.
+
+A failure in one source must not prevent other sources from returning results.
+
+For example:
+
+```text
+Hacker News  → SUCCESS
+GitHub       → FAILED
+arXiv        → SUCCESS
