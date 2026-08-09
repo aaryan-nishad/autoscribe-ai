@@ -4,6 +4,7 @@ export type EditorialDecision =
 
 export interface EditorialPolicy {
   minimumScore: number;
+  preselectionScore: number;
 
   weights: {
     relevance: number;

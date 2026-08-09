@@ -14,6 +14,8 @@ export const editorialPolicy: EditorialPolicy = {
    * publishable.
    */
   minimumScore: 70,
+  preselectionScore: 55,
+
 
   /**
    * Editorial weighting.

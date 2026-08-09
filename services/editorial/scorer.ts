@@ -43,41 +43,64 @@ function containsKeyword(
  * Score topic relevance.
  */
 function scoreRelevance(
-  topic: TopicCandidate,
+    topic: TopicCandidate,
 ): number {
-  const text = [
-    topic.title,
-    topic.summary,
-  ].join(" ");
+    const text = [
+        topic.title,
+        topic.summary,
+    ].join(" ").toLowerCase();
 
-  if (
-    containsKeyword(
-      text,
-      editorialPolicy.blacklist,
-    )
-  ) {
-    return 0;
-  }
+    if (
+        containsKeyword(
+            text,
+            editorialPolicy.blacklist,
+        )
+    ) {
+        return 0;
+    }
 
-  if (
-    containsKeyword(
-      text,
-      editorialPolicy.preferredTopics,
-    )
-  ) {
-    return 100;
-  }
+    const strongSignals = [
+        "artificial intelligence",
+        "machine learning",
+        "large language model",
+        "large language models",
+        "llm",
+        "ai agent",
+        "ai agents",
+        "ai infrastructure",
+        "ai security",
+        "model inference",
+        "model training",
+        "robotics",
+        "computer vision",
+        "open source",
+        "open-source",
+        "developer tool",
+        "developer tools",
+        "coding agent",
+        "ai coding",
+        "neural network",
+        "foundation model",
+    ];
 
-  if (
-    containsKeyword(
-      text,
-      editorialPolicy.interests,
-    )
-  ) {
-    return 80;
-  }
+    const matches = strongSignals.filter(
+        (keyword) =>
+            text.includes(keyword),
+    ).length;
 
-  return 35;
+    if (matches >= 3) {
+        return 100;
+    }
+
+    if (matches === 2) {
+        return 90;
+    }
+
+    if (matches === 1) {
+        return 75;
+    }
+
+    return 35;
 }
 
 /**
@@ -329,16 +352,16 @@ export function scoreTopic(
   const decision =
     !rejectedByBlacklist &&
     roundedScore >=
-      editorialPolicy.minimumScore
-      ? "SELECT"
-      : "REJECT";
+        editorialPolicy.preselectionScore
+        ? "SELECT"
+        : "REJECT";
 
   const reason =
     rejectedByBlacklist
       ? "Rejected because the topic matches an editorial blacklist rule."
       : decision === "SELECT"
-        ? `Selected because it scored ${roundedScore}/100 and meets the minimum editorial threshold of ${editorialPolicy.minimumScore}.`
-        : `Rejected because it scored ${roundedScore}/100, below the minimum editorial threshold of ${editorialPolicy.minimumScore}.`;
+        ? `Selected for AI editorial review because it scored ${roundedScore}/100 and meets the deterministic preselection threshold of ${editorialPolicy.preselectionScore}.`
+        : `Rejected because it scored ${roundedScore}/100, below the deterministic preselection threshold of ${editorialPolicy.preselectionScore}.`;
 
   return {
     relevance,

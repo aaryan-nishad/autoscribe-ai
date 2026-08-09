@@ -174,7 +174,7 @@ export function selectDiverseCandidates(
  */
 export function rankAndSelectCandidates(
   candidates: TopicCandidate[],
-  limit = 5,
+  limit = 15,
 ): RankedCandidate[] {
   const ranked =
     rankCandidates(
