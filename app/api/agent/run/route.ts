@@ -15,7 +15,7 @@ import { memoryService } from "../../../../services/memory";
 
 import { prisma } from "../../../../lib/prisma";
 
-const MAX_CANDIDATES = 5;
+const MAX_CANDIDATES = 15;
 
 export async function POST() {
     const startedAt = Date.now();
