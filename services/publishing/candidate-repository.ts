@@ -63,62 +63,113 @@ export async function saveCandidatePost(
      * and demonstrate editorial transparency.
      */
     const candidate =
-        await prisma.candidatePost.create({
-            data: {
-                draft:
-                    generatedPost.text,
+    await prisma.candidatePost.upsert({
+        where: {
+            topicId:
+                databaseTopic.id,
+        },
 
-                review:
-                    JSON.stringify({
-                        decision:
-                            qualityReview.decision,
+        update: {
+            draft:
+                generatedPost.text,
 
-                        score:
-                            qualityReview.score,
+            review:
+                JSON.stringify({
+                    decision:
+                        qualityReview.decision,
 
-                        accuracy:
-                            qualityReview.accuracy,
+                    score:
+                        qualityReview.score,
 
-                        relevance:
-                            qualityReview.relevance,
+                    accuracy:
+                        qualityReview.accuracy,
 
-                        technicalValue:
-                            qualityReview.technicalValue,
+                    relevance:
+                        qualityReview.relevance,
 
-                        personaFit:
-                            qualityReview.personaFit,
+                    technicalValue:
+                        qualityReview.technicalValue,
 
-                        sourceGrounding:
-                            qualityReview.sourceGrounding,
+                    personaFit:
+                        qualityReview.personaFit,
 
-                        originality:
-                            qualityReview.originality,
+                    sourceGrounding:
+                        qualityReview.sourceGrounding,
 
-                        clarity:
-                            qualityReview.clarity,
+                    originality:
+                        qualityReview.originality,
 
-                        reason:
-                            qualityReview.reason,
+                    clarity:
+                        qualityReview.clarity,
 
-                        improvements:
-                            qualityReview.improvements,
-                    }),
+                    reason:
+                        qualityReview.reason,
 
-                qualityScore:
-                    qualityReview.score,
+                    improvements:
+                        qualityReview.improvements,
+                }),
 
-                status:
-                    qualityReview.decision ===
-                        "APPROVE"
-                        ? "APPROVED"
-                        : "REJECTED",
+            qualityScore:
+                qualityReview.score,
 
-                topicId:
-                    databaseTopic.id,
+            
+        },
 
-                agentId,
-            },
-        });
+        create: {
+            draft:
+                generatedPost.text,
+
+            review:
+                JSON.stringify({
+                    decision:
+                        qualityReview.decision,
+
+                    score:
+                        qualityReview.score,
+
+                    accuracy:
+                        qualityReview.accuracy,
+
+                    relevance:
+                        qualityReview.relevance,
+
+                    technicalValue:
+                        qualityReview.technicalValue,
+
+                    personaFit:
+                        qualityReview.personaFit,
+
+                    sourceGrounding:
+                        qualityReview.sourceGrounding,
+
+                    originality:
+                        qualityReview.originality,
+
+                    clarity:
+                        qualityReview.clarity,
+
+                    reason:
+                        qualityReview.reason,
+
+                    improvements:
+                        qualityReview.improvements,
+                }),
+
+            qualityScore:
+                qualityReview.score,
+
+            status:
+                qualityReview.decision ===
+                    "APPROVE"
+                    ? "APPROVED"
+                    : "REJECTED",
+
+            topicId:
+                databaseTopic.id,
+
+            agentId,
+        },
+    });
 
     return candidate;
 }

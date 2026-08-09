@@ -1,51 +1,51 @@
 import {
-  searchBreethMemory,
-  writeBreethMemory,
+    searchBreethMemory,
+    writeBreethMemory,
 } from "./breeth";
 
 import type {
-  MemorySearchResult,
-  MemoryWriteResult,
+    MemorySearchResult,
+    MemoryWriteResult,
 } from "./types";
 
 const DEFAULT_GROUP_ID =
-  "autoscribe-editorial";
+    "autoscribe-editorial";
 
 export interface RememberEditorialDecisionInput {
-  topicTitle: string;
-  topicUrl: string;
-  sourceName: string;
+    topicTitle: string;
+    topicUrl: string;
+    sourceName: string;
 
-  decision:
+    decision:
     | "SELECT"
     | "REJECT";
 
-  score: number;
+    score: number;
 
-  reason: string;
+    reason: string;
 
-  keyInsight?: string | null;
+    keyInsight?: string | null;
 }
 
 export interface SearchEditorialMemoryInput {
-  topicTitle: string;
-  topicSummary?: string;
-  topicUrl?: string;
+    topicTitle: string;
+    topicSummary?: string;
+    topicUrl?: string;
 }
 
 export class MemoryService {
-  private readonly groupId: string;
+    private readonly groupId: string;
 
-  constructor(
-    groupId = DEFAULT_GROUP_ID,
-  ) {
-    this.groupId = groupId;
-  }
+    constructor(
+        groupId = DEFAULT_GROUP_ID,
+    ) {
+        this.groupId = groupId;
+    }
 
-  async rememberEditorialDecision(
-    input: RememberEditorialDecisionInput,
-  ): Promise<MemoryWriteResult> {
-    const content = `
+    async rememberEditorialDecision(
+        input: RememberEditorialDecisionInput,
+    ): Promise<MemoryWriteResult> {
+        const content = `
 AutoScribe editorial decision.
 
 Topic:
@@ -74,16 +74,16 @@ editorial decision and should be considered
 when evaluating related topics in the future.
 `;
 
-    return writeBreethMemory({
-      content,
-      groupId: this.groupId,
-    });
-  }
+        return writeBreethMemory({
+            content,
+            groupId: this.groupId,
+        });
+    }
 
-  async searchEditorialMemory(
-    input: SearchEditorialMemoryInput,
-  ): Promise<MemorySearchResult> {
-    const query = `
+    async searchEditorialMemory(
+        input: SearchEditorialMemoryInput,
+    ): Promise<MemorySearchResult> {
+        const query = `
 Find previous AutoScribe editorial decisions
 related to this topic.
 
@@ -106,23 +106,23 @@ Look for:
 - previous key insights
 `;
 
-    return searchBreethMemory({
-      query,
-      groupId: this.groupId,
-      limit: 5,
-    });
-  }
+        return searchBreethMemory({
+            query,
+            groupId: this.groupId,
+            limit: 5,
+        });
+    }
 
-  async rememberPublishedPost(
-    input: {
-      topicTitle: string;
-      topicUrl: string;
-      postText: string;
-      rationale: string;
-      sources: string[];
-    },
-  ): Promise<MemoryWriteResult> {
-    const content = `
+    async rememberPublishedPost(
+        input: {
+            topicTitle: string;
+            topicUrl: string;
+            postText: string;
+            rationale: string;
+            sources: string[];
+        },
+    ): Promise<MemoryWriteResult> {
+        const content = `
 AutoScribe published post.
 
 Topic:
@@ -146,12 +146,61 @@ evaluating future topics to avoid unnecessary
 repetition.
 `;
 
-    return writeBreethMemory({
-      content,
-      groupId: this.groupId,
-    });
-  }
+        return writeBreethMemory({
+            content,
+            groupId: this.groupId,
+        });
+    }
+    async searchPublishedMemory(
+  input: {
+    topicTitle: string;
+    topicUrl?: string;
+  },
+): Promise<MemorySearchResult> {
+  const query = `
+Find AutoScribe publications that may represent the same
+underlying technical development as the current topic.
+
+CURRENT TOPIC
+
+Title:
+${input.topicTitle}
+
+URL:
+${input.topicUrl ?? "Not provided"}
+
+Search specifically for:
+
+- the same company
+- the same product
+- the same repository
+- the same paper
+- the same project
+- the same release
+- the same technical development
+- the same announcement
+- the same underlying event
+- alternative titles describing the same development
+- previously published coverage of this development
+
+Prioritize semantic similarity to the CURRENT TOPIC.
+
+Do NOT return unrelated AI, LLM, agent, robotics, or developer
+topics merely because they share technology keywords.
+
+Only return previous AutoScribe publication memories that could
+help determine whether the CURRENT TOPIC has already been covered.
+
+The purpose of this search is duplicate-publication detection.
+`;
+
+  return searchBreethMemory({
+    query,
+    groupId: this.groupId,
+    limit: 10,
+  });
+}
 }
 
 export const memoryService =
-  new MemoryService();
+    new MemoryService();

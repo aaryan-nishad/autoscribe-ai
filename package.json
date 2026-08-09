@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "eslint",
+  "scheduler": "tsx scripts/scheduler-worker.ts"
+},
   "dependencies": {
     "@google/genai": "^2.16.0",
     "@prisma/adapter-pg": "^7.9.1",

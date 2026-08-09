@@ -1,5 +1,9 @@
 import { prisma } from "../../lib/prisma";
 
+import {
+    memoryService,
+} from "../memory";
+
 export interface PublishCandidateInput {
     candidateId: string;
 }
@@ -206,6 +210,38 @@ export async function publishCandidate(
                     };
                 },
             );
+
+        if (result.created) {
+            try {
+                await memoryService.rememberPublishedPost({
+                    topicTitle:
+                        candidate.topic.title,
+
+                    topicUrl:
+                        candidate.topic.url,
+
+                    postText:
+                        candidate.draft,
+
+                    rationale,
+
+                    sources: [
+                        candidate.topic.url,
+                    ],
+                });
+            } catch (error) {
+                /*
+                 * Publication has already succeeded.
+                 *
+                 * A Breeth failure must not turn a successful
+                 * publication into a failed autonomous run.
+                 */
+                console.error(
+                    "Warning: failed to persist published post to Breeth.",
+                    error,
+                );
+            }
+        }
 
         return {
             published:

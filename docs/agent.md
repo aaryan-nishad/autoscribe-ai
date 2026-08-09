@@ -1395,3 +1395,351 @@ HTTP status:
 
 ```text
 200
+
+# Stage 5.3 — Autonomous Agent Run API
+
+## Goal
+
+Connect the independently tested AutoScribe services into a single autonomous execution pipeline.
+
+## Pipeline
+
+Agent Initialization
+→ Topic Discovery
+→ AI Editorial Review
+→ Topic Persistence
+→ Post Generation
+→ Post Quality Review
+→ Candidate Persistence
+→ Publication
+→ Breeth Memory
+
+## API
+
+POST /api/agent/run
+
+## Execution Behavior
+
+The autonomous run:
+
+1. Initializes or loads the AutoScribe agent.
+2. Discovers topics from all configured sources.
+3. Evaluates candidates using the AI editorial reviewer.
+4. Persists selected topics in PostgreSQL.
+5. Generates candidate posts using Gemini.
+6. Runs the post quality gate.
+7. Persists CandidatePost records.
+8. Publishes approved candidates.
+9. Stores published-post memory in Breeth.
+10. Continues processing if an individual candidate fails.
+
+## Error Isolation
+
+A failure processing one candidate does not terminate the complete autonomous run.
+
+## Validation
+
+Autonomous execution API tested successfully.
+
+Test result:
+
+- HTTP status: 200
+- Successful sources: 3
+- Failed sources: 0
+- Raw candidates: 112
+- Unique candidates: 112
+- Candidates evaluated: 5
+- Published: 0
+- Rejected: 5
+- Errors: 0
+- Execution duration: 85.7 seconds
+
+## Result
+
+Stage 5.3 completed successfully.
+
+## Commit
+
+feat: add autonomous agent run API
+
+## Stage 5.4 — Candidate Ranking and Source Diversity
+
+Implemented a deterministic candidate ranking layer before AI editorial review.
+
+### Ranking
+
+The system now:
+
+1. Discovers candidates from all enabled sources.
+2. Scores candidates using the deterministic editorial scorer.
+3. Rejects deterministic candidates below the editorial threshold.
+4. Ranks eligible candidates by total editorial score.
+5. Gives each source an opportunity to contribute its strongest candidate.
+6. Fills remaining candidate slots using the highest-scoring candidates overall.
+7. Sends the selected candidates to the AI editorial reviewer.
+
+### Implementation
+
+New service:
+
+```text
+services/editorial/candidate-ranker.ts
+
+## Stage 5.5 — Run Safety, Failure Isolation, and Idempotent Candidate Persistence
+
+Implemented robust autonomous-run failure handling.
+
+### Candidate Failure Isolation
+
+Each candidate is processed inside an isolated try/catch.
+
+A failure during editorial review, topic persistence, post generation, quality review, candidate persistence, or publication is recorded as an `ERROR` result and does not terminate processing of the remaining candidates.
+
+### Discovery Warnings
+
+Discovery source failures are now surfaced through the run summary using `runWarnings`.
+
+A partially degraded discovery run can therefore complete while explicitly reporting failed sources.
+
+### Candidate Error Metadata
+
+Candidate processing errors record both the error message and error type for easier debugging.
+
+### Idempotent Candidate Persistence
+
+CandidatePost persistence uses Prisma `upsert()` keyed by the unique `topicId`.
+
+This prevents repeated autonomous runs from failing with a Prisma `P2002` unique-constraint error when a topic has already produced a CandidatePost.
+
+Existing candidate records are updated rather than duplicated.
+
+### Publication Idempotency
+
+Publication remains idempotent. Previously published candidates are not published again.
+
+### Validation
+
+Full autonomous run passed:
+
+```text
+97 unique candidates discovered
+3 successful sources
+5 candidates evaluated
+1 published
+4 rejected
+0 errors
+0 warnings
+
+## Current Project Progress — Autonomous Agent, Memory, Publishing & Scheduler
+
+### Autonomous Agent Pipeline
+
+AutoScribe currently follows this autonomous pipeline:
+
+1. Initialize/load the AutoScribe agent.
+2. Discover AI/technology topics from enabled sources.
+3. Normalize and deduplicate discovered topics.
+4. Rank discovered topics using deterministic candidate scoring.
+5. Select a limited number of candidates for editorial evaluation.
+6. Perform AI editorial review using Gemini.
+7. Use previous editorial and publication memory during evaluation.
+8. Reject exact previously published topics deterministically.
+9. Reject semantically duplicate previously covered developments.
+10. Allow meaningful new developments on previously covered subjects when the AI determines that the development is materially new.
+11. Generate a draft post for selected topics.
+12. Run a quality review on generated posts.
+13. Persist candidate posts.
+14. Publish only candidates that pass the quality gate.
+15. Persist successful publications in PostgreSQL.
+16. Persist published-post memory in Breeth.
+17. Continue processing remaining candidates if an individual candidate fails.
+
+### Discovery
+
+Enabled discovery sources currently include:
+
+- Hacker News
+- GitHub
+- arXiv
+
+The unified discovery engine:
+
+- Runs enabled sources concurrently.
+- Isolates source failures so one failed source does not stop other sources.
+- Normalizes candidate data.
+- Normalizes URLs.
+- Removes common tracking parameters.
+- Deduplicates candidates by canonical URL.
+- Sorts candidates by publication freshness.
+- Reports successful and failed sources.
+- Reports raw and unique candidate counts.
+
+A discovery failure is represented as a warning in the autonomous run rather than automatically terminating the complete run.
+
+### Editorial System
+
+The editorial system contains:
+
+- AI editorial review.
+- Deterministic candidate ranking.
+- Editorial scoring.
+- Relevance/significance/novelty/timeliness/evidence/audience-value evaluation.
+- Editorial decision persistence through memory.
+- Publication repetition controls.
+
+The AI editorial reviewer uses previous AutoScribe memory to improve decisions about:
+
+- Previously evaluated topics.
+- Previous rejection reasons.
+- Previously published topics.
+- Related technical developments.
+- Repeated stories.
+- Meaningful new developments.
+
+### Duplicate Publication Protection
+
+Duplicate protection currently operates at multiple levels.
+
+#### Exact URL protection
+
+PostgreSQL is the source of truth for exact publication history.
+
+Before AI editorial evaluation, AutoScribe checks whether the exact topic URL already has a published post.
+
+If it does, the topic is immediately rejected with score `0`.
+
+#### Publication memory protection
+
+Breeth publication memory is also searched for previous AutoScribe publications.
+
+This provides semantic context for identifying previously covered developments.
+
+#### Semantic duplicate protection
+
+The editorial prompt uses publication memory to identify topics that describe the same underlying technical development even when the URL and title are different.
+
+A semantically duplicate topic can therefore be rejected even when it is not an exact URL match.
+
+#### Meaningful new development exception
+
+A previously covered subject is not automatically rejected.
+
+If the current topic represents a clearly meaningful new development, such as:
+
+- major architectural changes,
+- significant new capabilities,
+- benchmarked improvements,
+- materially different technical developments,
+
+the editorial system may select the topic again.
+
+### Memory
+
+The memory service uses the `autoscribe-editorial` memory group.
+
+It supports:
+
+- Editorial decision memory.
+- Published-post memory.
+- Editorial memory search.
+- Published memory search.
+
+Published posts are remembered after successful database publication.
+
+Memory failures do not undo successful database publication or editorial decisions. They are logged as warnings/errors while allowing the primary workflow to continue.
+
+### Publishing
+
+The publishing service provides:
+
+- Candidate status validation.
+- APPROVED-only publishing.
+- Atomic PostgreSQL publication transaction.
+- Topic status transition to `PUBLISHED`.
+- PublishedPost creation.
+- Duplicate publication protection.
+- Idempotent publication behavior.
+- Breeth publication-memory persistence after successful publication.
+
+A rejected candidate cannot be published.
+
+Repeated publication attempts for an already published topic return the existing PublishedPost instead of creating a duplicate.
+
+### Scheduler
+
+The scheduler is implemented under:
+
+`services/scheduler/`
+
+It provides:
+
+- Agent lookup.
+- ACTIVE-agent validation.
+- Atomic `isProcessing` locking.
+- Scheduler execution logging.
+- Autonomous `/api/agent/run` execution.
+- Scheduler run statistics.
+- `lastRunAt` tracking.
+- `nextRunAt` scheduling.
+- Processing-lock release.
+- Failure recovery.
+- Retry scheduling after failures.
+
+The scheduler worker polls every 60 seconds but only starts an autonomous run when the database `nextRunAt` has been reached.
+
+The normal AutoScribe publishing interval is currently configured to:
+
+`60 minutes`
+
+The scheduler can be temporarily configured to a shorter interval during development/testing.
+
+### Scheduler Safety
+
+The scheduler uses an atomic database update to acquire the processing lock.
+
+This prevents multiple scheduler invocations from simultaneously owning the same agent run.
+
+The worker also prevents overlapping checks within the same worker process.
+
+A recovery script exists for development situations where a stale scheduler lock remains:
+
+`scripts/reset-stuck-scheduler.ts`
+
+A scheduler inspection script exists:
+
+`scripts/check-scheduler.ts`
+
+### Verified Tests
+
+The following behaviors have been tested successfully:
+
+- Autonomous agent initialization.
+- Autonomous agent run.
+- Candidate ranking.
+- Editorial AI review.
+- Exact duplicate publication rejection.
+- Semantic duplicate rejection.
+- Meaningful new development selection.
+- Published-post memory writing/search.
+- Real previously published topic rejection.
+- APPROVED-only publishing guard.
+- Publication idempotency.
+- Duplicate publication prevention.
+- Scheduler execution.
+- Scheduler state persistence.
+- Scheduler `nextRunAt` handling.
+- Scheduler processing lock behavior.
+
+### Current Known State
+
+The core autonomous backend pipeline is operational.
+
+A real autonomous run has successfully published a post:
+
+`esengine/DeepSeek-Reasonix`
+
+The resulting PostgreSQL `PublishedPost` record and publication state were verified.
+
+A second publication attempt correctly detected the existing publication and prevented duplication.
+
+The remaining major project work is primarily around productization, dashboard/UI, operational robustness, observability, configuration, and final production-readiness rather than the core autonomous publishing loop.

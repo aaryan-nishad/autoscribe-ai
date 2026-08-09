@@ -66,3 +66,9 @@ export interface AIEditorialReview {
 
   keyInsight: string | null;
 }
+export interface SemanticDuplicateReview {
+  isDuplicate: boolean;
+  hasMeaningfulNewDevelopment: boolean;
+  confidence: number;
+  reason: string;
+}

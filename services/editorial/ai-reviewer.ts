@@ -1,199 +1,202 @@
+import { prisma } from "../../lib/prisma";
+
 import {
-  getAIProvider,
+    getAIProvider,
 } from "../ai";
 
 import {
-  memoryService,
+    memoryService,
 } from "../memory";
 
 import type {
-  TopicCandidate,
+    TopicCandidate,
 } from "../sources/types";
 
 import {
-  editorialPolicy,
+    editorialPolicy,
 } from "./policy";
 
 import type {
-  AIEditorialReview,
+    AIEditorialReview,
+    SemanticDuplicateReview,
 } from "./types";
 
 function clampScore(
-  value: unknown,
+    value: unknown,
 ): number {
-  const number =
-    typeof value === "number"
-      ? value
-      : Number(value);
+    const number =
+        typeof value === "number"
+            ? value
+            : Number(value);
 
-  if (
-    Number.isNaN(number)
-  ) {
-    return 0;
-  }
+    if (
+        Number.isNaN(number)
+    ) {
+        return 0;
+    }
 
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(number),
-    ),
-  );
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            Math.round(number),
+        ),
+    );
 }
 function parseAIJson(
-  text: string,
+    text: string,
 ): unknown {
-  const raw = text.trim();
+    const raw = text.trim();
 
-  // 1. Direct JSON
-  try {
-    return JSON.parse(raw);
-  } catch {
-    // Continue.
-  }
+    // 1. Direct JSON
+    try {
+        return JSON.parse(raw);
+    } catch {
+        // Continue.
+    }
 
-  // 2. JSON wrapped in ```json ... ```
-  const fencedMatch =
-    raw.match(
-      /```(?:json)?\s*([\s\S]*?)\s*```/i,
+    // 2. JSON wrapped in ```json ... ```
+    const fencedMatch =
+        raw.match(
+            /```(?:json)?\s*([\s\S]*?)\s*```/i,
+        );
+
+    if (fencedMatch?.[1]) {
+        try {
+            return JSON.parse(
+                fencedMatch[1].trim(),
+            );
+        } catch {
+            // Continue.
+        }
+    }
+
+    // 3. JSON embedded in additional text
+    const firstBrace =
+        raw.indexOf("{");
+
+    const lastBrace =
+        raw.lastIndexOf("}");
+
+    if (
+        firstBrace !== -1 &&
+        lastBrace > firstBrace
+    ) {
+        const possibleJson =
+            raw.slice(
+                firstBrace,
+                lastBrace + 1,
+            );
+
+        try {
+            return JSON.parse(
+                possibleJson,
+            );
+        } catch {
+            // Continue.
+        }
+    }
+
+    throw new Error(
+        `AI editorial reviewer returned invalid JSON:\n${text}`,
     );
-
-  if (fencedMatch?.[1]) {
-    try {
-      return JSON.parse(
-        fencedMatch[1].trim(),
-      );
-    } catch {
-      // Continue.
-    }
-  }
-
-  // 3. JSON embedded in additional text
-  const firstBrace =
-    raw.indexOf("{");
-
-  const lastBrace =
-    raw.lastIndexOf("}");
-
-  if (
-    firstBrace !== -1 &&
-    lastBrace > firstBrace
-  ) {
-    const possibleJson =
-      raw.slice(
-        firstBrace,
-        lastBrace + 1,
-      );
-
-    try {
-      return JSON.parse(
-        possibleJson,
-      );
-    } catch {
-      // Continue.
-    }
-  }
-
-  throw new Error(
-    `AI editorial reviewer returned invalid JSON:\n${text}`,
-  );
 }
 function normalizeReview(
-  value: unknown,
+    value: unknown,
 ): AIEditorialReview {
-  if (
-    !value ||
-    typeof value !== "object"
-  ) {
-    throw new Error(
-      "AI editorial reviewer returned invalid JSON.",
-    );
-  }
+    if (
+        !value ||
+        typeof value !== "object"
+    ) {
+        throw new Error(
+            "AI editorial reviewer returned invalid JSON.",
+        );
+    }
 
-  const review =
-    value as Record<
-      string,
-      unknown
-    >;
+    const review =
+        value as Record<
+            string,
+            unknown
+        >;
 
-  const decision =
-    review.decision ===
-    "SELECT"
-      ? "SELECT"
-      : review.decision ===
-          "REJECT"
-        ? "REJECT"
-        : null;
+    const decision =
+        review.decision ===
+            "SELECT"
+            ? "SELECT"
+            : review.decision ===
+                "REJECT"
+                ? "REJECT"
+                : null;
 
-  if (!decision) {
-    throw new Error(
-      "AI editorial reviewer returned an invalid decision.",
-    );
-  }
+    if (!decision) {
+        throw new Error(
+            "AI editorial reviewer returned an invalid decision.",
+        );
+    }
 
-  const reason =
-    typeof review.reason ===
-    "string"
-      ? review.reason.trim()
-      : "";
+    const reason =
+        typeof review.reason ===
+            "string"
+            ? review.reason.trim()
+            : "";
 
-  if (!reason) {
-    throw new Error(
-      "AI editorial reviewer did not provide a reason.",
-    );
-  }
+    if (!reason) {
+        throw new Error(
+            "AI editorial reviewer did not provide a reason.",
+        );
+    }
 
-  return {
-    decision,
+    return {
+        decision,
 
-    score:
-      clampScore(
-        review.score,
-      ),
+        score:
+            clampScore(
+                review.score,
+            ),
 
-    relevance:
-      clampScore(
-        review.relevance,
-      ),
+        relevance:
+            clampScore(
+                review.relevance,
+            ),
 
-    significance:
-      clampScore(
-        review.significance,
-      ),
+        significance:
+            clampScore(
+                review.significance,
+            ),
 
-    novelty:
-      clampScore(
-        review.novelty,
-      ),
+        novelty:
+            clampScore(
+                review.novelty,
+            ),
 
-    timeliness:
-      clampScore(
-        review.timeliness,
-      ),
+        timeliness:
+            clampScore(
+                review.timeliness,
+            ),
 
-    evidence:
-      clampScore(
-        review.evidence,
-      ),
+        evidence:
+            clampScore(
+                review.evidence,
+            ),
 
-    audienceValue:
-      clampScore(
-        review.audienceValue,
-      ),
+        audienceValue:
+            clampScore(
+                review.audienceValue,
+            ),
 
-    reason,
+        reason,
 
-    keyInsight:
-      typeof review.keyInsight ===
-        "string" &&
-      review.keyInsight.trim()
-        ? review.keyInsight.trim()
-        : null,
-  };
+        keyInsight:
+            typeof review.keyInsight ===
+                "string" &&
+                review.keyInsight.trim()
+                ? review.keyInsight.trim()
+                : null,
+    };
 }
 
 function buildSystemPrompt(): string {
-  return `
+    return `
 You are the editorial decision engine for AutoScribe,
 an autonomous AI Systems Analyst.
 
@@ -212,43 +215,43 @@ EDITORIAL IDENTITY
 
 Interests:
 ${editorialPolicy.interests
-  .map(
-    (item) =>
-      `- ${item}`,
-  )
-  .join("\n")}
+            .map(
+                (item) =>
+                    `- ${item}`,
+            )
+            .join("\n")}
 
 Preferred topics:
 ${editorialPolicy.preferredTopics
-  .map(
-    (item) =>
-      `- ${item}`,
-  )
-  .join("\n")}
+            .map(
+                (item) =>
+                    `- ${item}`,
+            )
+            .join("\n")}
 
 Low-priority topics:
 ${editorialPolicy.lowPriorityTopics
-  .map(
-    (item) =>
-      `- ${item}`,
-  )
-  .join("\n")}
+            .map(
+                (item) =>
+                    `- ${item}`,
+            )
+            .join("\n")}
 
 Editorial opinions:
 ${editorialPolicy.opinions
-  .map(
-    (item) =>
-      `- ${item}`,
-  )
-  .join("\n")}
+            .map(
+                (item) =>
+                    `- ${item}`,
+            )
+            .join("\n")}
 
 Rejection rules:
 ${editorialPolicy.rejectionRules
-  .map(
-    (item) =>
-      `- ${item}`,
-  )
-  .join("\n")}
+            .map(
+                (item) =>
+                    `- ${item}`,
+            )
+            .join("\n")}
 
 MINIMUM SCORE
 
@@ -281,16 +284,50 @@ Hard rejection rules override the score.
 
 MEMORY RULES
 
-Previous AutoScribe memory is contextual evidence.
+Previous AutoScribe memory is contextual evidence and
+must actively influence the editorial decision.
 
-Use it to:
+Use memory to:
 
-- Detect repeated topics.
-- Detect substantially similar developments.
-- Avoid unnecessary repetition.
-- Understand previous editorial decisions.
-- Build continuity with previously selected topics.
-- Recognize when a new development is genuinely different.
+- Detect topics that AutoScribe has already evaluated.
+- Detect topics that AutoScribe has already published.
+- Detect substantially similar or duplicate developments.
+- Avoid republishing the same story.
+- Avoid publishing substantially the same technical development
+  under a different title or source.
+- Understand previous rejection reasons.
+- Identify whether a current topic represents a genuinely
+  new development.
+
+REPETITION CONTROL
+
+If previous memory clearly indicates that the same topic,
+story, paper, repository, release, or substantially identical
+technical development has already been published by AutoScribe:
+
+- REJECT the current topic.
+- Do not select it merely because it is still recent or relevant.
+- Explain in the reason that AutoScribe has already covered
+  the development.
+
+A previously published topic may be SELECTED again only when
+the current topic contains a clearly meaningful new development,
+such as:
+
+- a major new release,
+- a substantial technical update,
+- new benchmark results,
+- a significant research result,
+- a major architectural change,
+- or materially different evidence.
+
+Minor updates, reposts, mirrors, announcements, or the same
+story from another source should normally be REJECTED.
+
+If previous memory indicates that a topic was previously
+REJECTED, reconsider it independently. A rejection is not
+permanent if meaningful new evidence or a significant
+technical development has appeared.
 
 Do NOT blindly copy a previous decision.
 
@@ -325,10 +362,11 @@ Return ONLY valid JSON.
 }
 
 function buildUserPrompt(
-  topic: TopicCandidate,
-  memoryContext: string,
+    topic: TopicCandidate,
+    memoryContext: string,
+    publicationMemoryContext: string,
 ): string {
-  return `
+    return `
 Evaluate this discovered topic.
 
 CURRENT TOPIC
@@ -349,28 +387,46 @@ TOPIC URL:
 ${topic.url}
 
 PUBLISHED / UPDATED:
-${
-  topic.publishedDate
-    ? topic.publishedDate.toISOString()
-    : "Unknown"
-}
+${topic.publishedDate
+            ? topic.publishedDate.toISOString()
+            : "Unknown"
+        }
 
-PREVIOUS AUTOSCRIBE MEMORY
+PREVIOUS AUTOSCRIBE EDITORIAL MEMORY
 
-${
-  memoryContext ||
-  "No relevant previous memory was found."
-}
+${memoryContext ||
+        "No relevant previous editorial memory was found."
+        }
 
-Use the previous memory as context.
+PREVIOUS AUTOSCRIBE PUBLICATION MEMORY
+
+${publicationMemoryContext ||
+        "No relevant previous publication memory was found."
+        }
+
+Use the previous memory as editorial history, not merely
+as background information.
 
 Pay special attention to whether:
 
-1. This topic was already evaluated.
-2. This topic substantially repeats a previous topic.
-3. This topic represents a meaningful new development.
-4. A previous rejection reason still applies.
-5. The topic provides a new technical insight.
+1. This exact topic was already evaluated.
+2. This exact topic was already published.
+3. This topic substantially repeats a previously published story.
+4. The current source is only another representation of an
+   already-covered development.
+5. The current topic contains a genuinely meaningful new
+   development.
+6. A previous rejection reason still applies.
+7. The topic provides a genuinely new technical insight.
+
+If the memory clearly indicates that this topic or the same
+substantive development was already published by AutoScribe,
+prefer REJECT unless the current source contains a material
+new development.
+
+If there is no meaningful difference from the previously
+published material, do not select it merely because the
+current source is newer.
 
 Return exactly this JSON structure:
 
@@ -392,132 +448,501 @@ All numeric values must be between 0 and 100.
 }
 
 function buildMemoryContext(
-  facts: Array<{
-    fact?: string;
-    name?: string | null;
-    tier?: string;
-  }>,
+    facts: Array<{
+        fact?: string;
+        name?: string | null;
+        tier?: string;
+    }>,
 ): string {
-  if (
-    facts.length === 0
-  ) {
-    return "";
-  }
+    if (
+        facts.length === 0
+    ) {
+        return "";
+    }
 
-  return facts
-    .map(
-      (memory, index) => {
-        const fact =
-          memory.fact ??
-          memory.name ??
-          "No textual fact available.";
+    return facts
+        .map(
+            (memory, index) => {
+                const fact =
+                    memory.fact ??
+                    memory.name ??
+                    "No textual fact available.";
 
-        return `${
-          index + 1
-        }. ${fact}`;
-      },
-    )
-    .join("\n");
+                return `${index + 1
+                    }. ${fact}`;
+            },
+        )
+        .join("\n");
+}
+
+function normalizeUrl(url: string): string {
+    return url
+        .trim()
+        .replace(/\/+$/, "")
+        .toLowerCase();
+}
+
+function normalizeTitle(title: string): string {
+    return title
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function hasExactPublishedDuplicate(
+    topic: TopicCandidate,
+    publicationMemory: Array<{
+        fact?: string;
+        name?: string | null;
+    }>,
+): boolean {
+    const currentUrl =
+        normalizeUrl(topic.url);
+
+    const currentTitle =
+        normalizeTitle(topic.title);
+
+    if (!currentUrl && !currentTitle) {
+        return false;
+    }
+
+    return publicationMemory.some(
+        (memory) => {
+            const text = [
+                memory.fact ?? "",
+                memory.name ?? "",
+            ].join(" ");
+
+            const normalizedText =
+                normalizeTitle(text);
+
+            const urlMatch =
+                currentUrl.length > 0 &&
+                text
+                    .toLowerCase()
+                    .includes(currentUrl);
+
+            const titleMatch =
+                currentTitle.length > 0 &&
+                normalizedText.includes(
+                    currentTitle,
+                );
+
+            return urlMatch || titleMatch;
+        },
+    );
+
+}
+async function checkSemanticPublishedDuplicate(
+    topic: TopicCandidate,
+    publicationMemoryContext: string,
+): Promise<SemanticDuplicateReview> {
+    if (!publicationMemoryContext.trim()) {
+        return {
+            isDuplicate: false,
+            hasMeaningfulNewDevelopment: false,
+            confidence: 0,
+            reason: "No previous publication memory was available.",
+        };
+    }
+
+    const provider = getAIProvider();
+
+    const response = await provider.generate({
+        systemPrompt: `
+You are AutoScribe's semantic duplicate detection engine.
+
+Your ONLY job is to determine whether the current topic represents
+the same substantive technical development as something AutoScribe
+has already published.
+
+Do NOT evaluate general editorial quality.
+
+A topic should be considered a duplicate when it describes the same
+underlying development, product launch, release, research result,
+repository, paper, announcement, or technical event.
+
+Different:
+- titles
+- URLs
+- sources
+- wording
+- publication dates
+
+do NOT make something new if the underlying development is the same.
+
+A previously published topic may be treated as NOT a duplicate only
+when the current topic contains a genuinely meaningful new development.
+
+Meaningful new development includes:
+
+- major new release
+- substantial technical update
+- major architectural change
+- new benchmark results
+- significant research result
+- materially different technical evidence
+
+Minor updates, reposts, mirrors, follow-up announcements, and
+the same story from another source are normally duplicates.
+
+Return ONLY valid JSON.
+
+JSON structure:
+
+{
+  "isDuplicate": true | false,
+  "hasMeaningfulNewDevelopment": true | false,
+  "confidence": 0,
+  "reason": "..."
+}
+
+confidence must be between 0 and 100.
+`,
+        userPrompt: `
+CURRENT TOPIC
+
+Title:
+${topic.title}
+
+Summary:
+${topic.summary}
+
+Source:
+${topic.sourceName}
+
+URL:
+${topic.url}
+
+PREVIOUS AUTOSCRIBE PUBLICATIONS
+
+${publicationMemoryContext}
+
+Determine whether the current topic represents the same substantive
+technical development as a previously published AutoScribe topic.
+
+Do not reject merely because the topics are in the same technology
+area.
+
+Compare the actual underlying development.
+
+If the current topic is substantially the same story, set:
+
+"isDuplicate": true
+
+If it contains a genuinely meaningful new development, set:
+
+"isDuplicate": false
+"hasMeaningfulNewDevelopment": true
+
+Return only JSON.
+`,
+    });
+
+    const parsed = parseAIJson(response.text);
+
+    if (
+        !parsed ||
+        typeof parsed !== "object"
+    ) {
+        throw new Error(
+            "Semantic duplicate reviewer returned invalid JSON.",
+        );
+    }
+
+    const value =
+        parsed as Record<string, unknown>;
+
+    return {
+        isDuplicate:
+            value.isDuplicate === true,
+
+        hasMeaningfulNewDevelopment:
+            value.hasMeaningfulNewDevelopment === true,
+
+        confidence:
+            clampScore(value.confidence),
+
+        reason:
+            typeof value.reason === "string" &&
+                value.reason.trim()
+                ? value.reason.trim()
+                : "No semantic duplicate reason was provided.",
+    };
+}
+async function findExactPublishedDuplicate(
+    topic: TopicCandidate,
+): Promise<boolean> {
+    const publishedTopic =
+        await prisma.topic.findFirst({
+            where: {
+                url: topic.url,
+                publishedPost: {
+                    isNot: null,
+                },
+            },
+            select: {
+                id: true,
+            },
+        });
+
+    return Boolean(publishedTopic);
 }
 
 export async function reviewTopicWithAI(
-  topic: TopicCandidate,
+    topic: TopicCandidate,
 ): Promise<AIEditorialReview> {
-  /*
-   * Step 1:
-   * Retrieve relevant previous AutoScribe memory.
-   */
-  const memory =
-    await memoryService.searchEditorialMemory(
-      {
-        topicTitle:
-          topic.title,
-
-        topicSummary:
-          topic.summary,
-
-        topicUrl:
-          topic.url,
-      },
-    );
-
-  const memoryContext =
-    buildMemoryContext(
-      memory.results,
-    );
-
-  /*
-   * Step 2:
-   * Ask Gemini to evaluate the topic using
-   * both the editorial constitution and memory.
-   */
-  const provider =
-    getAIProvider();
-
-  const response =
-    await provider.generate({
-      systemPrompt:
-        buildSystemPrompt(),
-
-      userPrompt:
-        buildUserPrompt(
-          topic,
-          memoryContext,
-        ),
-    });
-
-  const parsed =
-  parseAIJson(
-    response.text,
-  );
-
-  const review =
-    normalizeReview(
-      parsed,
-    );
-
-  /*
-   * Step 3:
-   * Persist this editorial decision in Breeth
-   * so future autonomous cycles can use it.
-   */
-  try {
-    await memoryService.rememberEditorialDecision(
-      {
-        topicTitle:
-          topic.title,
-
-        topicUrl:
-          topic.url,
-
-        sourceName:
-          topic.sourceName,
-
-        decision:
-          review.decision,
-
-        score:
-          review.score,
-
-        reason:
-          review.reason,
-
-        keyInsight:
-          review.keyInsight,
-      },
-    );
-  } catch (error) {
     /*
-     * Editorial judgment itself succeeded.
+     * Step 0:
+     * Deterministic exact publication check.
      *
-     * Memory failure should be visible but should
-     * not erase the valid AI decision.
+     * PostgreSQL is the source of truth for whether
+     * AutoScribe has already published this exact URL.
      */
-    console.error(
-      "Warning: failed to persist editorial decision to Breeth.",
-      error,
-    );
-  }
+    const exactPublishedDuplicate =
+        await findExactPublishedDuplicate(topic);
 
-  return review;
+    if (exactPublishedDuplicate) {
+        const review: AIEditorialReview = {
+            decision: "REJECT",
+            score: 0,
+            relevance: 0,
+            significance: 0,
+            novelty: 0,
+            timeliness: 0,
+            evidence: 0,
+            audienceValue: 0,
+
+            reason:
+                "AutoScribe has already published this exact topic URL. The current candidate is an exact duplicate and must be rejected under the repetition control rules.",
+
+            keyInsight: null,
+        };
+
+        try {
+            await memoryService.rememberEditorialDecision({
+                topicTitle: topic.title,
+                topicUrl: topic.url,
+                sourceName: topic.sourceName,
+                decision: review.decision,
+                score: review.score,
+                reason: review.reason,
+                keyInsight: review.keyInsight,
+            });
+        } catch (error) {
+            console.error(
+                "Warning: failed to persist duplicate rejection to Breeth.",
+                error,
+            );
+        }
+
+        return review;
+    }
+
+    /*
+     * Step 1:
+     * Retrieve previous AutoScribe editorial memory.
+     */
+    const memory =
+        await memoryService.searchEditorialMemory({
+            topicTitle: topic.title,
+            topicSummary: topic.summary,
+            topicUrl: topic.url,
+        });
+
+    /*
+     * Step 2:
+     * Retrieve previous publication memory.
+     *
+     * This is still useful for semantic duplicate detection,
+     * but PostgreSQL above remains the source of truth for
+     * exact URL duplicates.
+     */
+    const publicationMemory =
+        await memoryService.searchPublishedMemory({
+            topicTitle: topic.title,
+            topicUrl: topic.url,
+        });
+
+    const memoryPublishedDuplicate =
+        hasExactPublishedDuplicate(
+            topic,
+            publicationMemory.results,
+        );
+
+    if (memoryPublishedDuplicate) {
+        const review: AIEditorialReview = {
+            decision: "REJECT",
+            score: 0,
+            relevance: 0,
+            significance: 0,
+            novelty: 0,
+            timeliness: 0,
+            evidence: 0,
+            audienceValue: 0,
+            reason:
+                "AutoScribe has already published this exact topic or URL. The current candidate is an exact duplicate and must be rejected under the repetition control rules.",
+            keyInsight: null,
+        };
+
+        try {
+            await memoryService.rememberEditorialDecision({
+                topicTitle: topic.title,
+                topicUrl: topic.url,
+                sourceName: topic.sourceName,
+                decision: review.decision,
+                score: review.score,
+                reason: review.reason,
+                keyInsight: review.keyInsight,
+            });
+        } catch (error) {
+            console.error(
+                "Warning: failed to persist duplicate rejection to Breeth.",
+                error,
+            );
+        }
+
+        return review;
+    }
+
+    const memoryContext =
+        buildMemoryContext(
+            memory.results,
+        );
+
+    const publicationMemoryContext =
+        buildMemoryContext(
+            publicationMemory.results,
+        );
+
+    /*
+     * Step 2:
+     * Semantic duplicate pre-check.
+     *
+     * Exact duplicates are handled deterministically above.
+     * This check handles the harder case where the same
+     * development appears under a different title, URL,
+     * or source.
+     */
+    const semanticDuplicate =
+        await checkSemanticPublishedDuplicate(
+            topic,
+            publicationMemoryContext,
+        );
+
+    if (
+        semanticDuplicate.isDuplicate &&
+        !semanticDuplicate.hasMeaningfulNewDevelopment
+    ) {
+        const review: AIEditorialReview = {
+            decision: "REJECT",
+            score: 0,
+            relevance: 0,
+            significance: 0,
+            novelty: 0,
+            timeliness: 0,
+            evidence: 0,
+            audienceValue: 0,
+
+            reason:
+                `AutoScribe has already covered the same substantive development. ${semanticDuplicate.reason}`,
+
+            keyInsight: null,
+        };
+
+        try {
+            await memoryService.rememberEditorialDecision({
+                topicTitle: topic.title,
+                topicUrl: topic.url,
+                sourceName: topic.sourceName,
+                decision: review.decision,
+                score: review.score,
+                reason: review.reason,
+                keyInsight: review.keyInsight,
+            });
+        } catch (error) {
+            console.error(
+                "Warning: failed to persist semantic duplicate rejection to Breeth.",
+                error,
+            );
+        }
+
+        return review;
+    }
+
+    /*
+     * Step 3:
+     * Ask Gemini to perform the normal editorial review.
+     */
+    const provider =
+        getAIProvider();
+
+    const response =
+        await provider.generate({
+            systemPrompt:
+                buildSystemPrompt(),
+
+            userPrompt:
+                buildUserPrompt(
+                    topic,
+                    memoryContext,
+                    publicationMemoryContext,
+                ),
+        });
+
+    const parsed =
+        parseAIJson(
+            response.text,
+        );
+
+    const review =
+        normalizeReview(
+            parsed,
+        );
+
+    /*
+     * Step 3:
+     * Persist this editorial decision in Breeth
+     * so future autonomous cycles can use it.
+     */
+    try {
+        await memoryService.rememberEditorialDecision(
+            {
+                topicTitle:
+                    topic.title,
+
+                topicUrl:
+                    topic.url,
+
+                sourceName:
+                    topic.sourceName,
+
+                decision:
+                    review.decision,
+
+                score:
+                    review.score,
+
+                reason:
+                    review.reason,
+
+                keyInsight:
+                    review.keyInsight,
+            },
+        );
+    } catch (error) {
+        /*
+         * Editorial judgment itself succeeded.
+         *
+         * Memory failure should be visible but should
+         * not erase the valid AI decision.
+         */
+        console.error(
+            "Warning: failed to persist editorial decision to Breeth.",
+            error,
+        );
+    }
+
+    return review;
 }

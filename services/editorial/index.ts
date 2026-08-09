@@ -16,3 +16,9 @@ export type {
   EditorialPolicy,
   EditorialScore,
 } from "./types";
+
+export {
+  rankCandidates,
+  selectDiverseCandidates,
+  rankAndSelectCandidates,
+} from "./candidate-ranker";
