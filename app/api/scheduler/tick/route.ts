@@ -4,7 +4,44 @@ import {
     runSchedulerOnce,
 } from "../../../../services/scheduler";
 
-export async function POST() {
+export const dynamic = "force-dynamic";
+
+function isAuthorized(
+    request: Request,
+): boolean {
+    const cronSecret =
+        process.env.CRON_SECRET;
+
+    if (!cronSecret) {
+        return false;
+    }
+
+    const authorization =
+        request.headers.get(
+            "authorization",
+        );
+
+    return (
+        authorization ===
+        `Bearer ${cronSecret}`
+    );
+}
+
+async function handleSchedulerTick(
+    request: Request,
+) {
+    if (!isAuthorized(request)) {
+        return NextResponse.json(
+            {
+                success: false,
+                error: "Unauthorized",
+            },
+            {
+                status: 401,
+            },
+        );
+    }
+
     try {
         const result =
             await runSchedulerOnce();
@@ -32,4 +69,16 @@ export async function POST() {
             },
         );
     }
+}
+
+export async function GET(
+    request: Request,
+) {
+    return handleSchedulerTick(request);
+}
+
+export async function POST(
+    request: Request,
+) {
+    return handleSchedulerTick(request);
 }

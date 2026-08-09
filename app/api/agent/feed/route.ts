@@ -6,152 +6,208 @@ const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
 export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
+    try {
+        const searchParams =
+            request.nextUrl.searchParams;
 
-    const requestedLimit = Number(
-      searchParams.get("limit") ?? DEFAULT_LIMIT,
-    );
+        const agentId =
+            searchParams.get("agentId");
 
-    const limit =
-      Number.isFinite(requestedLimit) &&
-      requestedLimit > 0
-        ? Math.min(
-            Math.floor(requestedLimit),
-            MAX_LIMIT,
-          )
-        : DEFAULT_LIMIT;
+        if (!agentId) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error:
+                        "agentId query parameter is required.",
+                },
+                {
+                    status: 400,
+                },
+            );
+        }
 
-    const cursor = searchParams.get("cursor");
+        const agent =
+            await prisma.agent.findUnique({
+                where: {
+                    id: agentId,
+                },
 
-    const posts =
-      await prisma.publishedPost.findMany({
-        where: {
-          topic: {
-            status: "PUBLISHED",
-          },
-        },
+                select: {
+                    id: true,
+                },
+            });
 
-        orderBy: [
-          {
-            publishedAt: "desc",
-          },
-          {
-            id: "desc",
-          },
-        ],
+        if (!agent) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Agent not found.",
+                },
+                {
+                    status: 404,
+                },
+            );
+        }
 
-        take: limit + 1,
+        const requestedLimit =
+            Number(
+                searchParams.get("limit") ??
+                    DEFAULT_LIMIT,
+            );
 
-        ...(cursor
-          ? {
-              cursor: {
-                id: cursor,
-              },
+        const limit =
+            Number.isFinite(requestedLimit) &&
+            requestedLimit > 0
+                ? Math.min(
+                      Math.floor(
+                          requestedLimit,
+                      ),
+                      MAX_LIMIT,
+                  )
+                : DEFAULT_LIMIT;
 
-              skip: 1,
-            }
-          : {}),
+        const cursor =
+            searchParams.get("cursor");
 
-        include: {
-          topic: true,
-          agent: true,
-        },
-      });
+        const posts =
+            await prisma.publishedPost.findMany({
+                where: {
+                    agentId,
 
-    const hasMore =
-      posts.length > limit;
+                    topic: {
+                        status: "PUBLISHED",
+                    },
+                },
 
-    const visiblePosts = hasMore
-      ? posts.slice(0, limit)
-      : posts;
+                orderBy: [
+                    {
+                        publishedAt: "desc",
+                    },
+                    {
+                        id: "desc",
+                    },
+                ],
 
-    const nextCursor = hasMore
-      ? visiblePosts[
-          visiblePosts.length - 1
-        ].id
-      : null;
+                take: limit + 1,
 
-    return NextResponse.json({
-      success: true,
+                ...(cursor
+                    ? {
+                          cursor: {
+                              id: cursor,
+                          },
 
-      data: {
-        posts: visiblePosts.map(
-          (post) => ({
-            id: post.id,
+                          skip: 1,
+                      }
+                    : {}),
 
-            text: post.text,
+                include: {
+                    topic: true,
+                    agent: true,
+                },
+            });
 
-            rationale:
-              post.rationale,
+        const hasMore =
+            posts.length > limit;
 
-            sources:
-              post.sources,
+        const visiblePosts =
+            hasMore
+                ? posts.slice(0, limit)
+                : posts;
 
-            publishedAt:
-              post.publishedAt,
+        const nextCursor =
+            hasMore
+                ? visiblePosts[
+                      visiblePosts.length - 1
+                  ].id
+                : null;
 
-            topic: {
-              id:
-                post.topic.id,
+        return NextResponse.json({
+            success: true,
 
-              title:
-                post.topic.title,
+            data: {
+                posts:
+                    visiblePosts.map(
+                        (post) => ({
+                            id: post.id,
 
-              summary:
-                post.topic.summary,
+                            createdAt:
+                                post.publishedAt,
 
-              sourceName:
-                post.topic.sourceName,
+                            text:
+                                post.text,
 
-              sourceUrl:
-                post.topic.sourceUrl,
+                            rationale:
+                                post.rationale,
 
-              url:
-                post.topic.url,
+                            sources:
+                                post.sources,
 
-              publishedDate:
-                post.topic.publishedDate,
+                            publishedAt:
+                                post.publishedAt,
+
+                            topic: {
+                                id:
+                                    post.topic.id,
+
+                                title:
+                                    post.topic.title,
+
+                                summary:
+                                    post.topic.summary,
+
+                                sourceName:
+                                    post.topic
+                                        .sourceName,
+
+                                sourceUrl:
+                                    post.topic
+                                        .sourceUrl,
+
+                                url:
+                                    post.topic.url,
+
+                                publishedDate:
+                                    post.topic
+                                        .publishedDate,
+                            },
+
+                            agent: {
+                                id:
+                                    post.agent.id,
+
+                                name:
+                                    post.agent.name,
+
+                                domain:
+                                    post.agent
+                                        .domain,
+                            },
+                        }),
+                    ),
+
+                pagination: {
+                    limit,
+                    hasMore,
+                    nextCursor,
+                },
             },
+        });
+    } catch (error) {
+        console.error(
+            "Agent feed request failed:",
+            error,
+        );
 
-            agent: {
-              id:
-                post.agent.id,
+        return NextResponse.json(
+            {
+                success: false,
 
-              name:
-                post.agent.name,
-
-              domain:
-                post.agent.domain,
+                error:
+                    "Failed to load AutoScribe feed.",
             },
-          }),
-        ),
-
-        pagination: {
-          limit,
-
-          hasMore,
-
-          nextCursor,
-        },
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Agent feed request failed:",
-      error,
-    );
-
-    return NextResponse.json(
-      {
-        success: false,
-
-        error:
-          "Failed to load AutoScribe feed.",
-      },
-      {
-        status: 500,
-      },
-    );
-  }
+            {
+                status: 500,
+            },
+        );
+    }
 }
