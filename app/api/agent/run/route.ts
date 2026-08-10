@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { initializeAgent } from "../../../../services/agent/agent-service";
 import { discoverTopics } from "../../../../services/discovery";
-import { reviewTopicWithAI, rankAndSelectCandidates, } from "../../../../services/editorial";
+import {
+    reviewTopicWithAI,
+    rankAndSelectCandidates,
+} from "../../../../services/editorial";
 
 import {
     generatePost,
@@ -15,7 +18,7 @@ import { memoryService } from "../../../../services/memory";
 
 import { prisma } from "../../../../lib/prisma";
 
-const MAX_CANDIDATES = 5;
+const MAX_CANDIDATES = 8;
 
 export async function POST() {
     const startedAt = Date.now();
@@ -28,8 +31,6 @@ export async function POST() {
 
         const runWarnings: string[] = [];
 
-        
-
         /*
          * 2. Discover topics from all configured sources.
          */
@@ -37,8 +38,7 @@ export async function POST() {
 
         if (discovery.failedSources > 0) {
             runWarnings.push(
-                `Failed discovery sources: ${discovery.failedSourceNames.join(", ")
-                }`,
+                `Failed discovery sources: ${discovery.failedSourceNames.join(", ")}`,
             );
         }
 
@@ -54,10 +54,16 @@ export async function POST() {
                     candidate.topic,
             );
 
-        
-
         const results = [];
 
+        /*
+         * Only one candidate may be published
+         * during a single autonomous run.
+         *
+         * We still review all selected candidates so
+         * the agent can exercise editorial judgment.
+         */
+        let hasPublished = false;
 
         console.log(
             "\nAutoScribe candidate ranking:",
@@ -142,6 +148,12 @@ export async function POST() {
                     });
 
                 /*
+                 * Keep the variable referenced so the
+                 * topic persistence operation remains explicit.
+                 */
+                void databaseTopic;
+
+                /*
                  * 3C. Generate the post.
                  */
                 const generatedPost =
@@ -195,6 +207,27 @@ export async function POST() {
                 }
 
                 /*
+                 * Only ONE post may be published per run.
+                 *
+                 * If an earlier candidate was already published,
+                 * this approved candidate is intentionally deferred.
+                 */
+                if (hasPublished) {
+                    results.push({
+                        title: topic.title,
+                        source: topic.sourceName,
+                        decision: "DEFERRED",
+                        editorialScore:
+                            editorialReview.score,
+                        qualityScore:
+                            qualityReview.score,
+                        candidateId: candidate.id,
+                    });
+
+                    continue;
+                }
+
+                /*
                  * 3G. Publish.
                  */
                 const publication =
@@ -202,29 +235,32 @@ export async function POST() {
                         candidateId: candidate.id,
                     });
 
-                // /*
-                //  * 3H. Remember publication in Breeth.
-                //  */
-                // if (publication.published) {
-                //     try {
-                //         await memoryService.rememberPublishedPost({
-                //             topicTitle: topic.title,
-                //             topicUrl: topic.url,
-                //             postText: generatedPost.text,
-                //             rationale: generatedPost.rationale,
-                //             sources: generatedPost.sources,
-                //         });
-                //     } catch (memoryError) {
-                //         /*
-                //          * Memory failure must not undo a successful
-                //          * database publication.
-                //          */
-                //         console.warn(
-                //             "Warning: failed to persist published post to Breeth.",
-                //             memoryError,
-                //         );
-                //     }
-                // }
+                if (publication.published) {
+                    hasPublished = true;
+                }
+
+                /*
+                 * 3H. Remember publication in Breeth.
+                 *
+                 * Memory failure must never undo a successful
+                 * database publication.
+                 */
+                if (publication.published) {
+                    try {
+                        await memoryService.rememberPublishedPost({
+                            topicTitle: topic.title,
+                            topicUrl: topic.url,
+                            postText: generatedPost.text,
+                            rationale: generatedPost.rationale,
+                            sources: generatedPost.sources,
+                        });
+                    } catch (memoryError) {
+                        console.warn(
+                            "Warning: failed to persist published post to Breeth.",
+                            memoryError,
+                        );
+                    }
+                }
 
                 results.push({
                     title: topic.title,
