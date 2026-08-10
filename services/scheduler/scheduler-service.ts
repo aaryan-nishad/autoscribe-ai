@@ -2,6 +2,15 @@ import { prisma } from "../../lib/prisma";
 
 const DEFAULT_APP_URL = "http://localhost:3000";
 
+/*
+ * A scheduler run normally completes within a few minutes.
+ *
+ * If the processing lock is older than this threshold,
+ * assume the previous invocation crashed or timed out and
+ * allow the next scheduler tick to recover it.
+ */
+const STALE_LOCK_MINUTES = 15;
+
 interface AgentRunResponse {
     success: boolean;
 
@@ -55,24 +64,63 @@ export async function runSchedulerOnce() {
     }
 
     /*
-     * Check whether the agent is already processing.
+     * Use a timestamp as the lock ownership token.
      *
-     * updateMany is intentionally used here because the
-     * WHERE condition makes this an atomic lock.
+     * This allows us to distinguish:
+     * - the current run
+     * - an old/stale run
+     * - a newer run that reclaimed a stale lock
+     */
+    const lockAcquiredAt = new Date();
+
+    const staleBefore = new Date(
+        lockAcquiredAt.getTime() -
+        STALE_LOCK_MINUTES * 60 * 1000,
+    );
+
+    /*
+     * Acquire the processing lock atomically.
+     *
+     * Normal case:
+     *     isProcessing = false
+     *
+     * Recovery case:
+     *     isProcessing = true
+     *     but processingStartedAt is older than
+     *     STALE_LOCK_MINUTES.
+     *
+     * The timestamp is updated whenever this invocation
+     * successfully acquires the lock.
      */
     const lock = await prisma.agent.updateMany({
         where: {
             id: agent.id,
-            isProcessing: false,
+
+            OR: [
+                {
+                    isProcessing: false,
+                },
+                {
+                    isProcessing: true,
+                    processingStartedAt: {
+                        lt: staleBefore,
+                    },
+                },
+                {
+                    isProcessing: true,
+                    processingStartedAt: null,
+                },
+            ],
         },
 
         data: {
             isProcessing: true,
+            processingStartedAt: lockAcquiredAt,
         },
     });
 
     /*
-     * Another scheduler invocation already owns the lock.
+     * Another scheduler invocation still owns a valid lock.
      */
     if (lock.count === 0) {
         return {
@@ -81,7 +129,7 @@ export async function runSchedulerOnce() {
         };
     }
 
-    const startedAt = new Date();
+    const startedAt = lockAcquiredAt;
 
     let schedulerLogId: string | null = null;
 
@@ -123,6 +171,7 @@ export async function runSchedulerOnce() {
                 ),
             },
         );
+
         const text = await response.text();
 
         let data: AgentRunResponse;
@@ -237,16 +286,22 @@ export async function runSchedulerOnce() {
         });
 
         /*
-         * Release the processing lock and schedule
-         * the next execution.
+         * Release the lock ONLY if this invocation still owns it.
+         *
+         * This is important when a stale lock has been recovered.
+         * An old invocation must never be allowed to clear the
+         * lock belonging to a newer invocation.
          */
-        await prisma.agent.update({
+        await prisma.agent.updateMany({
             where: {
                 id: agent.id,
+                processingStartedAt:
+                    lockAcquiredAt,
             },
 
             data: {
                 isProcessing: false,
+                processingStartedAt: null,
                 lastRunAt: finishedAt,
                 nextRunAt,
             },
@@ -281,7 +336,7 @@ export async function runSchedulerOnce() {
                     : String(error);
 
         /*
-         * Never leave the scheduler lock stuck.
+         * Update scheduler log when possible.
          */
         if (schedulerLogId) {
             await prisma.schedulerLog.update({
@@ -297,13 +352,23 @@ export async function runSchedulerOnce() {
             });
         }
 
-        await prisma.agent.update({
+        /*
+         * Release the lock ONLY if this invocation still owns it.
+         *
+         * If this was a stale invocation that was already replaced
+         * by a newer run, this update affects zero rows and therefore
+         * cannot interrupt the newer run.
+         */
+        await prisma.agent.updateMany({
             where: {
                 id: agent.id,
+                processingStartedAt:
+                    lockAcquiredAt,
             },
 
             data: {
                 isProcessing: false,
+                processingStartedAt: null,
 
                 /*
                  * Retry on the next scheduler tick.

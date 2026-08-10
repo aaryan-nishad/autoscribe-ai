@@ -1062,6 +1062,7 @@ export const AgentScalarFieldEnum = {
   status: 'status',
   publishIntervalMinutes: 'publishIntervalMinutes',
   isProcessing: 'isProcessing',
+  processingStartedAt: 'processingStartedAt',
   lastRunAt: 'lastRunAt',
   nextRunAt: 'nextRunAt',
   createdAt: 'createdAt',

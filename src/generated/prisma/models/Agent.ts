@@ -41,6 +41,7 @@ export type AgentMinAggregateOutputType = {
   status: $Enums.AgentStatus | null
   publishIntervalMinutes: number | null
   isProcessing: boolean | null
+  processingStartedAt: Date | null
   lastRunAt: Date | null
   nextRunAt: Date | null
   createdAt: Date | null
@@ -54,6 +55,7 @@ export type AgentMaxAggregateOutputType = {
   status: $Enums.AgentStatus | null
   publishIntervalMinutes: number | null
   isProcessing: boolean | null
+  processingStartedAt: Date | null
   lastRunAt: Date | null
   nextRunAt: Date | null
   createdAt: Date | null
@@ -67,6 +69,7 @@ export type AgentCountAggregateOutputType = {
   status: number
   publishIntervalMinutes: number
   isProcessing: number
+  processingStartedAt: number
   lastRunAt: number
   nextRunAt: number
   createdAt: number
@@ -90,6 +93,7 @@ export type AgentMinAggregateInputType = {
   status?: true
   publishIntervalMinutes?: true
   isProcessing?: true
+  processingStartedAt?: true
   lastRunAt?: true
   nextRunAt?: true
   createdAt?: true
@@ -103,6 +107,7 @@ export type AgentMaxAggregateInputType = {
   status?: true
   publishIntervalMinutes?: true
   isProcessing?: true
+  processingStartedAt?: true
   lastRunAt?: true
   nextRunAt?: true
   createdAt?: true
@@ -116,6 +121,7 @@ export type AgentCountAggregateInputType = {
   status?: true
   publishIntervalMinutes?: true
   isProcessing?: true
+  processingStartedAt?: true
   lastRunAt?: true
   nextRunAt?: true
   createdAt?: true
@@ -216,6 +222,7 @@ export type AgentGroupByOutputType = {
   status: $Enums.AgentStatus
   publishIntervalMinutes: number
   isProcessing: boolean
+  processingStartedAt: Date | null
   lastRunAt: Date | null
   nextRunAt: Date | null
   createdAt: Date
@@ -252,6 +259,7 @@ export type AgentWhereInput = {
   status?: Prisma.EnumAgentStatusFilter<"Agent"> | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFilter<"Agent"> | number
   isProcessing?: Prisma.BoolFilter<"Agent"> | boolean
+  processingStartedAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   lastRunAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   nextRunAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
@@ -271,6 +279,7 @@ export type AgentOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   publishIntervalMinutes?: Prisma.SortOrder
   isProcessing?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   nextRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -293,6 +302,7 @@ export type AgentWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.EnumAgentStatusFilter<"Agent"> | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFilter<"Agent"> | number
   isProcessing?: Prisma.BoolFilter<"Agent"> | boolean
+  processingStartedAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   lastRunAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   nextRunAt?: Prisma.DateTimeNullableFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Agent"> | Date | string
@@ -312,6 +322,7 @@ export type AgentOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   publishIntervalMinutes?: Prisma.SortOrder
   isProcessing?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   nextRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -333,6 +344,7 @@ export type AgentScalarWhereWithAggregatesInput = {
   status?: Prisma.EnumAgentStatusWithAggregatesFilter<"Agent"> | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntWithAggregatesFilter<"Agent"> | number
   isProcessing?: Prisma.BoolWithAggregatesFilter<"Agent"> | boolean
+  processingStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Agent"> | Date | string | null
   lastRunAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Agent"> | Date | string | null
   nextRunAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Agent"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Agent"> | Date | string
@@ -346,6 +358,7 @@ export type AgentCreateInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -365,6 +378,7 @@ export type AgentUncheckedCreateInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -384,6 +398,7 @@ export type AgentUpdateInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -403,6 +418,7 @@ export type AgentUncheckedUpdateInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -422,6 +438,7 @@ export type AgentCreateManyInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -435,6 +452,7 @@ export type AgentUpdateManyMutationInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -448,6 +466,7 @@ export type AgentUncheckedUpdateManyInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -461,6 +480,7 @@ export type AgentCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   publishIntervalMinutes?: Prisma.SortOrder
   isProcessing?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -478,6 +498,7 @@ export type AgentMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   publishIntervalMinutes?: Prisma.SortOrder
   isProcessing?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -491,6 +512,7 @@ export type AgentMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   publishIntervalMinutes?: Prisma.SortOrder
   isProcessing?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
   nextRunAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -625,6 +647,7 @@ export type AgentCreateWithoutPersonaInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -643,6 +666,7 @@ export type AgentUncheckedCreateWithoutPersonaInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -677,6 +701,7 @@ export type AgentUpdateWithoutPersonaInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -695,6 +720,7 @@ export type AgentUncheckedUpdateWithoutPersonaInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -713,6 +739,7 @@ export type AgentCreateWithoutTopicsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -731,6 +758,7 @@ export type AgentUncheckedCreateWithoutTopicsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -765,6 +793,7 @@ export type AgentUpdateWithoutTopicsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -783,6 +812,7 @@ export type AgentUncheckedUpdateWithoutTopicsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -801,6 +831,7 @@ export type AgentCreateWithoutCandidatesInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -819,6 +850,7 @@ export type AgentUncheckedCreateWithoutCandidatesInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -853,6 +885,7 @@ export type AgentUpdateWithoutCandidatesInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -871,6 +904,7 @@ export type AgentUncheckedUpdateWithoutCandidatesInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -889,6 +923,7 @@ export type AgentCreateWithoutPostsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -907,6 +942,7 @@ export type AgentUncheckedCreateWithoutPostsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -941,6 +977,7 @@ export type AgentUpdateWithoutPostsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -959,6 +996,7 @@ export type AgentUncheckedUpdateWithoutPostsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -977,6 +1015,7 @@ export type AgentCreateWithoutMemoriesInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -995,6 +1034,7 @@ export type AgentUncheckedCreateWithoutMemoriesInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -1029,6 +1069,7 @@ export type AgentUpdateWithoutMemoriesInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1047,6 +1088,7 @@ export type AgentUncheckedUpdateWithoutMemoriesInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1065,6 +1107,7 @@ export type AgentCreateWithoutSchedulerLogsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -1083,6 +1126,7 @@ export type AgentUncheckedCreateWithoutSchedulerLogsInput = {
   status?: $Enums.AgentStatus
   publishIntervalMinutes?: number
   isProcessing?: boolean
+  processingStartedAt?: Date | string | null
   lastRunAt?: Date | string | null
   nextRunAt?: Date | string | null
   createdAt?: Date | string
@@ -1117,6 +1161,7 @@ export type AgentUpdateWithoutSchedulerLogsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1135,6 +1180,7 @@ export type AgentUncheckedUpdateWithoutSchedulerLogsInput = {
   status?: Prisma.EnumAgentStatusFieldUpdateOperationsInput | $Enums.AgentStatus
   publishIntervalMinutes?: Prisma.IntFieldUpdateOperationsInput | number
   isProcessing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   nextRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1220,6 +1266,7 @@ export type AgentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   status?: boolean
   publishIntervalMinutes?: boolean
   isProcessing?: boolean
+  processingStartedAt?: boolean
   lastRunAt?: boolean
   nextRunAt?: boolean
   createdAt?: boolean
@@ -1240,6 +1287,7 @@ export type AgentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   status?: boolean
   publishIntervalMinutes?: boolean
   isProcessing?: boolean
+  processingStartedAt?: boolean
   lastRunAt?: boolean
   nextRunAt?: boolean
   createdAt?: boolean
@@ -1253,6 +1301,7 @@ export type AgentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   status?: boolean
   publishIntervalMinutes?: boolean
   isProcessing?: boolean
+  processingStartedAt?: boolean
   lastRunAt?: boolean
   nextRunAt?: boolean
   createdAt?: boolean
@@ -1266,13 +1315,14 @@ export type AgentSelectScalar = {
   status?: boolean
   publishIntervalMinutes?: boolean
   isProcessing?: boolean
+  processingStartedAt?: boolean
   lastRunAt?: boolean
   nextRunAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "domain" | "status" | "publishIntervalMinutes" | "isProcessing" | "lastRunAt" | "nextRunAt" | "createdAt" | "updatedAt", ExtArgs["result"]["agent"]>
+export type AgentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "domain" | "status" | "publishIntervalMinutes" | "isProcessing" | "processingStartedAt" | "lastRunAt" | "nextRunAt" | "createdAt" | "updatedAt", ExtArgs["result"]["agent"]>
 export type AgentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   persona?: boolean | Prisma.Agent$personaArgs<ExtArgs>
   topics?: boolean | Prisma.Agent$topicsArgs<ExtArgs>
@@ -1302,6 +1352,7 @@ export type $AgentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     status: $Enums.AgentStatus
     publishIntervalMinutes: number
     isProcessing: boolean
+    processingStartedAt: Date | null
     lastRunAt: Date | null
     nextRunAt: Date | null
     createdAt: Date
@@ -1741,6 +1792,7 @@ export interface AgentFieldRefs {
   readonly status: Prisma.FieldRef<"Agent", 'AgentStatus'>
   readonly publishIntervalMinutes: Prisma.FieldRef<"Agent", 'Int'>
   readonly isProcessing: Prisma.FieldRef<"Agent", 'Boolean'>
+  readonly processingStartedAt: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly lastRunAt: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly nextRunAt: Prisma.FieldRef<"Agent", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Agent", 'DateTime'>

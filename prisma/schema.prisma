@@ -67,10 +67,14 @@ model Agent {
   publishIntervalMinutes Int @default(60)
 
   // Prevents duplicate concurrent processing
-  isProcessing Boolean @default(false)
+isProcessing Boolean @default(false)
 
-  lastRunAt DateTime?
-  nextRunAt DateTime?
+// Records when the current processing lock was acquired.
+// Used to recover automatically from crashed/timed-out runs.
+processingStartedAt DateTime?
+
+lastRunAt DateTime?
+nextRunAt DateTime?
 
   // Relations
   persona       Persona?
